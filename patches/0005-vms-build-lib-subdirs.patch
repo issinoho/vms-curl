@@ -69,7 +69,7 @@ lib/formdata.c with full /DEBUG; compile with /DEBUG=TRACEBACK there.
 +$! list it too ("./"), except for curlx, whose wait.h would shadow <wait.h>.
 +$ cc_include_sub = cc_include
 +$ if lib_sub .nes. "curlx" then -
-+    cc_include_sub = cc_include - "/include=(" + "/include=(""./"","
++    cc_include_sub = "/include=(""./""," + (cc_include - "/include=(")
 +$ cc_include_save = cc_include
 +$ cc_include = cc_include_sub
 +$ call build "[--.lib.''lib_sub']" "*.c" "''objdir'CURLLIB.OLB" "amigaos, nwlib, nwos"

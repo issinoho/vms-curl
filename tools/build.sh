@@ -28,3 +28,10 @@ cat > "$job" <<DCL
 DCL
 VMS_TIMEOUT=${VMS_BUILD_TIMEOUT:-5400} "$top/tools/vms.sh" "$node" run "$job" | tee "$top/out/build-$node.log"
 grep -q 'BUILD: done' "$top/out/build-$node.log"
+# Upstream's build_vms.com carries on past failed compiles and links with
+# undefined symbols, and still produces CURL.EXE, which then crashes at run time
+# (%SYSTEM-F-CALLUNDEFSYM).  Treat both as build failures.
+if grep -aE 'USEUNDEF|UNDFSYM|%DCL-[WEF]-|%CC-[EF]-|%LIBRAR-[EF]-|%LIBRAR-W-OPENIN' "$top/out/build-$node.log" >&2; then
+    echo "build: errors or undefined symbols in out/build-$node.log" >&2
+    exit 1
+fi
