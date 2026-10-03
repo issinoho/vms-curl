@@ -4,3 +4,5 @@
 0003-vms-build-config-template.patch
 0004-vms-config-feature-switches.patch
 0005-vms-build-lib-subdirs.patch
+0006-tool-formparse-fabdef-vms.patch
+0007-ldap-vms-no-ber-memvfree.patch

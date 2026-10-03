@@ -1,0 +1,23 @@
+Subject: ldap: on OpenVMS free the API extensions with ldap_value_free
+
+HP LDAP for OpenVMS (SYS$SHARE:LDAP$SHR) has no ber_memvfree(), so curl
+did not link (%ILINK-W-USEUNDEF, ber_memvfree).  Free the NULL-terminated
+extension list with ldap_value_free(), as the __OS400__ branch does.
+A candidate for upstream curl.
+
+--- a/lib/ldap.c	2026-10-03 23:18:12.380800879 +0100
++++ b/lib/ldap.c	2026-10-03 23:18:12.399428144 +0100
+@@ -949,8 +949,13 @@
+     curl_msnprintf(buf, bufsz, "%s/%u.%u.%u%s",
+                    api.ldapai_vendor_name, major, minor, patch, flavor);
+     ldap_memfree(api.ldapai_vendor_name);
++#ifdef __VMS
++    /* HP LDAP for OpenVMS has no ber_memvfree() */
++    ldap_value_free(api.ldapai_extensions);
++#else
+     ber_memvfree((void **)api.ldapai_extensions);
+ #endif
++#endif
+   }
+   else
+     curl_msnprintf(buf, bufsz, "LDAP/1");

@@ -19,7 +19,8 @@ generate_config_vms_h_curl.com (config_vms.h, included last):
   Kerberos check;
 - undefine HAVE_FNMATCH when the CRTL has no <fnmatch.h> (IA64), and
   HAVE_ACCEPT4: the x86-64 CRTL has accept4() but not SOCK_NONBLOCK and
-  SOCK_CLOEXEC.
+  SOCK_CLOEXEC; and HAVE_STRERROR_R, whose style (POSIX or glibc) is not
+  known, so curl uses strerror().
 
 
 --- a/projects/vms/config_h.com	2026-10-03 22:43:53.474433109 +0100
@@ -47,7 +48,7 @@ generate_config_vms_h_curl.com (config_vms.h, included last):
  $!----------------------------------------------------------
  $       pflag = 0
 --- a/projects/vms/generate_config_vms_h_curl.com	2026-10-03 22:43:53.479092349 +0100
-+++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-03 23:02:14.702851599 +0100
++++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-03 23:09:55.269242710 +0100
 @@ -157,10 +157,14 @@
  $if .not. nokerberos
  $then
@@ -64,7 +65,7 @@ generate_config_vms_h_curl.com (config_vms.h, included last):
  $endif
  $!
  $!
-@@ -209,11 +213,55 @@
+@@ -209,11 +213,61 @@
  $write cvh "#elif defined(__vax)"
  $write cvh "#define CURL_OS ""VAX-HP-VMS"""
  $write cvh "#elif defined(__ia64)"
@@ -117,6 +118,12 @@ generate_config_vms_h_curl.com (config_vms.h, included last):
 +$write cvh ""
 +$write cvh "/* accept4() without SOCK_NONBLOCK / SOCK_CLOEXEC */"
 +$write cvh "#undef HAVE_ACCEPT4"
++$!
++$! config_h.com finds strerror_r() but not which style it is (curl insists on
++$! POSIX or glibc); use strerror(), curl's fallback.
++$write cvh ""
++$write cvh "/* strerror_r() style unknown: use strerror() */"
++$write cvh "#undef HAVE_STRERROR_R"
 +$write cvh ""
  $!
  $! We are now setting this on the GNV build, so also do this

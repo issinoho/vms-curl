@@ -4,13 +4,20 @@ build_vms.com compiled only lib/ and lib/vtls/.  curl now also has
 lib/curlx, lib/vauth, lib/vdns, lib/vquic and lib/vssh; compile those into
 CURLLIB.OLB too.  Their sources (and vtls's) include headers as
 "curlx/warnless.h", which VSI C resolves only against a Unix-style include
-directory ("../"), not a VMS one ([--.lib]), so use those, also for src/.
+directory ("../"), not a VMS one ([--.lib]), so use those, also for src/;
+and compile with /NESTED_INCLUDE_DIRECTORY=PRIMARY_FILE (was NONE) so a
+source's own directory is searched for "..." includes (lib/vdns "doh.h")
+without putting it on the list, where lib/curlx/wait.h shadowed <wait.h>.
+src/curlinfo.c, a separate helper program with its own main(), is left
+out of CURLSRC.OLB; src/toolx (curl 8.x) is compiled into it.  VSI C 7.7 on
+x86-64 does not search the primary source's directory despite PRIMARY_FILE,
+so the subdirectories other than curlx also list "./".
 
 VSI C 7.7 on x86-64 crashes (ACCVIO in DECC$COMPILER) compiling
 lib/formdata.c with full /DEBUG; compile with /DEBUG=TRACEBACK there.
 
 --- a/projects/vms/build_vms.com	2026-10-03 23:02:01.315877888 +0100
-+++ b/projects/vms/build_vms.com	2026-10-03 23:02:14.695851175 +0100
++++ b/projects/vms/build_vms.com	2026-10-03 23:17:58.470141842 +0100
 @@ -290,6 +290,9 @@
  $    cc_large = ""
  $ else
@@ -21,7 +28,20 @@ lib/formdata.c with full /DEBUG; compile with /DEBUG=TRACEBACK there.
  $    cc_defs = cc_defs + ",_USE_STD_STAT"
  $    cc_float = "/float=ieee/ieee_mode=denorm_results"
  $    cc_large = ",_LARGEFILE"
-@@ -854,13 +857,26 @@
+@@ -708,7 +711,11 @@
+ $!
+ $ cc_defs = "/define = (''cc_defs')"
+ $ cc_qual2 = cc_qual2 + " /object = ''objdir'"
+-$ cc_qual2 = cc_qual2 + "/nested_include_directory=none"
++$! PRIMARY_FILE: "..." includes also search the compiled source's own
++$! directory (curl 8.x's lib subdirectories include their neighbours, e.g.
++$! lib/vdns/asyn-base.c "doh.h"); <...> includes do not, so a curl header
++$! such as lib/curlx/wait.h cannot stand in for the CRTL's <wait.h>.
++$ cc_qual2 = cc_qual2 + "/nested_include_directory=primary_file"
+ $!
+ $ 'vo_c' "CC opts:", -
+   " ''cc_defs'", -
+@@ -854,14 +861,46 @@
  $ cc_include = cc_include + ",[-.projects.vms.''arch_name'])"
  $ call build "[--.lib]" "*.c" "''objdir'CURLLIB.OLB" "amigaos, nwlib, nwos"
  $ if ($status .eq. ctrl_y) then goto Common_Exit
@@ -33,7 +53,10 @@ lib/formdata.c with full /DEBUG; compile with /DEBUG=TRACEBACK there.
 +$! vssh, which newer curl releases added).  Their sources include headers
 +$! as "curlx/warnless.h" etc.: VSI C resolves such a path only against a
 +$! Unix-style include directory ("../"), not a VMS one ([--.lib]).
-+$ cc_include = "/include=(""./"",""../"",""../../src"",""../../projects/vms""" + -
++$! (Not "./": with /NESTED_INCLUDE_DIRECTORY=PRIMARY_FILE a source's own
++$! directory is searched for "..." includes, and on the list "./" made
++$! lib/curlx/wait.h stand in for the CRTL's <wait.h>.)
++$ cc_include = "/include=(""../"",""../../src"",""../../projects/vms""" + -
 +    ",""../../projects/vms/''arch_name'"")"
 +$ lib_subdirs = "vtls,curlx,vauth,vdns,vquic,vssh"
 +$ lib_sub_i = 0
@@ -42,15 +65,33 @@ lib/formdata.c with full /DEBUG; compile with /DEBUG=TRACEBACK there.
 +$ if lib_sub .eqs. "," then goto lib_sub_done
 +$ lib_sub_i = lib_sub_i + 1
 +$ if f$search("[--.lib]''lib_sub'.DIR") .eqs. "" then goto lib_sub_loop
++$! VSI C 7.7 on x86-64 does not search the primary source's directory, so
++$! list it too ("./"), except for curlx, whose wait.h would shadow <wait.h>.
++$ cc_include_sub = cc_include
++$ if lib_sub .nes. "curlx" then -
++    cc_include_sub = cc_include - "/include=(" + "/include=(""./"","
++$ cc_include_save = cc_include
++$ cc_include = cc_include_sub
 +$ call build "[--.lib.''lib_sub']" "*.c" "''objdir'CURLLIB.OLB" "amigaos, nwlib, nwos"
++$ cc_include = cc_include_save
 +$ if ($status .eq. ctrl_y) then goto Common_Exit
 +$ goto lib_sub_loop
 +$lib_sub_done:
  $! Build SRC
 -$ cc_include = "/include=([-.src],[-.lib],[-.lib.vtls]"
 -$ cc_include = cc_include + ",[-.projects.vms],[-.projects.vms.''arch_name'])"
-+$ cc_include = "/include=(""./"",""../lib"",""../lib/vtls"",""../projects/vms""" + -
+-$ call build "[--.src]" "*.c" "''objdir'CURLSRC.OLB"
++$ cc_include = "/include=(""../lib"",""../lib/vtls"",""../projects/vms""" + -
 +    ",""../projects/vms/''arch_name'"")"
- $ call build "[--.src]" "*.c" "''objdir'CURLSRC.OLB"
++$! curlinfo.c is a separate helper program with its own main().
++$ call build "[--.src]" "*.c" "''objdir'CURLSRC.OLB" "curlinfo"
++$! src/toolx (curl 8.x): helpers of the curl tool (tool_time.c ...).
++$ if f$search("[--.src]toolx.DIR") .nes. ""
++$ then
++$   cc_include = "/include=(""./"",""../"",""../../lib"",""../../lib/vtls""" + -
++      ",""../../projects/vms"",""../../projects/vms/''arch_name'"")"
++$   call build "[--.src.toolx]" "*.c" "''objdir'CURLSRC.OLB"
++$ endif
  $ if ($status .eq. ctrl_y) then goto Common_Exit
  $! Build MSG
+ $ call build "[]" "*.msg" "''objdir'CURLSRC.OLB"

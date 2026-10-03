@@ -1,0 +1,19 @@
+Subject: tool_formparse: include <fabdef.h> on VMS
+
+tool_formparse.c compares st_fab_rfm with FAB$C_VAR and FAB$C_VFC under
+__VMS, but only tool_operate.c includes <fabdef.h>, so the curl tool did not
+compile on OpenVMS (%CC-E-UNDECLARED).  A candidate for upstream curl.
+
+--- a/src/tool_formparse.c	2026-10-03 23:13:50.066681253 +0100
++++ b/src/tool_formparse.c	2026-10-03 23:13:50.086005474 +0100
+@@ -23,6 +23,10 @@
+  ***************************************************************************/
+ #include "tool_setup.h"
+ 
++#ifdef __VMS
++#  include <fabdef.h>
++#endif
++
+ #include "tool_cfgable.h"
+ #include "tool_msgs.h"
+ #include "tool_paramhlp.h"
