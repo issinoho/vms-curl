@@ -30,7 +30,7 @@ VMS files in `vmsport/`.
 | Builds with upstream's `build_vms.com` | yes | yes |
 | Smoke test (HTTP, HTTPS with the default CA bundle, `--compressed`, batch output, errors) | 8/8 | 8/8 |
 | Form post from a batch job | yes | yes |
-| PCSI kit | `ISSINOHO-I64VMS-VMSCURL-V0822-0E1-1.PCSI` | `ISSINOHO-X86VMS-VMSCURL-V0822-0E1-1.PCSI` |
+| PCSI kit ([v8.22.0-vms1](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms1)) | `ISSINOHO-I64VMS-VMSCURL-V0822-0E1-1.PCSI` | `ISSINOHO-X86VMS-VMSCURL-V0822-0E1-1.PCSI` |
 
 `curl --version` on x86-64:
 
