@@ -10,6 +10,9 @@ $!     SYS$SHARE:SSL3$LIBSSL_SHR32 and SSL3$LIBCRYPTO_SHR32);
 $!   - zlib linked statically from ZLIB$ROOT, a rooted logical for a
 $!     github.com/issinoho/vms-zlib install tree.  Define it first, e.g.
 $!       $ DEFINE/TRANSLATION=CONCEALED ZLIB$ROOT dev:[dir.ZLIB-1_3_2.INSTALL_IA64.]
+$!   - the default CA bundle is VMSCURL$ROOT:[SSL]CACERT.PEM, where the kit
+$!     installs curl.se's bundle (patch 0010 reads CURL_CA_BUNDLE_DEFAULT).
+$!     It is compiled into config_vms.h, so change it only with CLEAN.
 $! Output: [.PROJECTS.VMS.<arch>]CURL.EXE
 $!
 $ status = 44
@@ -34,10 +37,12 @@ $   write sys$error "BUILD: define ZLIB$ROOT for the vms-zlib install tree first
 $   goto done
 $ endif
 $ define/process OPENSSL SSL3$INCLUDE:
+$ define/process CURL_CA_BUNDLE_DEFAULT "VMSCURL$ROOT:[SSL]CACERT.PEM"
 $! NOKERBEROS: GSS-API is in VMS, but its gssapi_krb5.h headers are not installed.
 $ @[.projects.vms]build_vms.com 'target' NOKERBEROS 'p2' 'p3'
 $ status = $status
 $ deassign/process OPENSSL
+$ deassign/process CURL_CA_BUNDLE_DEFAULT
 $ if target .nes. "CLEAN" .and. -
      f$search("[.projects.vms.''arch']CURL.EXE") .eqs. "" then status = 44
 $ if status then write sys$output "BUILD: done"

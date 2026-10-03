@@ -1,0 +1,20 @@
+=product @PRODUCER@ @BASE@ VMSCURL @PCSIVERSION@ full
+1 'PRODUCER
+=prompt @PRODUCER@
+1 'PRODUCT
+=prompt curl @VERSION@ for OpenVMS (vms-curl)
+1 'NOTICE
+=prompt curl is distributed under the curl licence (MIT style).
+1 RELEASE_NOTES
+=prompt Documentation is in [VMSCURL.DOC]README.VMS under the installation directory.
+1 POST_INSTALL
+=prompt Post-installation tasks for curl (vms-curl)
+    At system startup: to define VMSCURL$ROOT at every boot, add this line
+    to SYS$MANAGER:SYSTARTUP_VMS.COM:
+    $ @SYS$STARTUP:VMSCURL$STARTUP.COM
+    To run curl, define a foreign command, for example in SYLOGIN.COM:
+    $ curl :== $VMSCURL$ROOT:[BIN]CURL.EXE
+    In batch jobs, quote options that use capital letters ("-F") or use
+    SET PROCESS/PARSE_STYLE=EXTENDED first.
+
+PRODUCT REMOVE VMSCURL removes the product and deassigns VMSCURL$ROOT.

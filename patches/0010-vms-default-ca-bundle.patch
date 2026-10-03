@@ -1,0 +1,28 @@
+Subject: vms: let the build set a default CA bundle
+
+config_h.com cannot work out CURL_CA_BUNDLE (configure finds it by probing
+the build host's file system), so curl on OpenVMS has no default and every
+HTTPS request needs --cacert.  If the logical name CURL_CA_BUNDLE_DEFAULT
+is defined during the build, write it into config_vms.h as CURL_CA_BUNDLE.
+A kit that installs a CA bundle defines it to where the bundle will be.
+
+--- a/projects/vms/generate_config_vms_h_curl.com	2026-10-03 23:49:36.372452409 +0100
++++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-03 23:49:36.411679635 +0100
+@@ -267,6 +267,17 @@
+ $write cvh ""
+ $write cvh "/* strerror_r() style unknown: use strerror() */"
+ $write cvh "#undef HAVE_STRERROR_R"
++$!
++$! Default CA bundle: a packager that installs one defines the logical name
++$! CURL_CA_BUNDLE_DEFAULT for the build, e.g. "MYCURL$ROOT:[SSL]CACERT.PEM".
++$ca_bundle = f$trnlnm("CURL_CA_BUNDLE_DEFAULT")
++$if ca_bundle .nes. ""
++$then
++$   write cvh ""
++$   write cvh "/* Default CA bundle (--cacert, CURL_CA_BUNDLE override it) */"
++$   write cvh "#undef CURL_CA_BUNDLE"
++$   write cvh "#define CURL_CA_BUNDLE ""''ca_bundle'"""
++$endif
+ $write cvh ""
+ $!
+ $! We are now setting this on the GNV build, so also do this

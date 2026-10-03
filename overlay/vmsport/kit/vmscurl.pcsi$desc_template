@@ -1,0 +1,37 @@
+--
+-- PCSI product description for curl (vms-curl) on OpenVMS.
+-- Template: tools/prepare.sh substitutes @PRODUCER@, @BASE@ and @PCSIVERSION@.
+--
+-- VSI's CURL kit uses [CURL] and CURL$ROOT; this product uses [VMSCURL] and
+-- VMSCURL$ROOT so that the two can be installed side by side.
+--
+product @PRODUCER@ @BASE@ VMSCURL @PCSIVERSION@ full ;
+
+    -- curl links VSI's OpenSSL 3.0 shared images (SYS$SHARE:SSL3$*_SHR32).
+    software VSI @BASE@ SSL3 ;
+
+    information RELEASE_NOTES phase after ;
+
+    directory [VMSCURL] ;
+    directory [VMSCURL.BIN] ;
+    directory [VMSCURL.DOC] ;
+    directory [VMSCURL.SSL] ;
+
+    file [VMSCURL.BIN]CURL.EXE ;
+    file [VMSCURL.SSL]CACERT.PEM ;
+    file [SYS$STARTUP]VMSCURL$STARTUP.COM ;
+    file [VMSCURL.DOC]README.VMS ;
+    file [VMSCURL.DOC]COPYING. ;
+    file [VMSCURL.DOC]MANUAL.TXT ;
+    file [VMSCURL.DOC]SSLCERTS.TXT ;
+    file [VMSCURL.DOC]RELEASE-NOTES. ;
+
+    -- Define VMSCURL$ROOT now and print the post-installation tasks (PCSI
+    -- shows only the title of an information message unless /HELP is given).
+    execute postinstall "@PCSI$DESTINATION:[SYS$STARTUP]VMSCURL$STARTUP.COM INSTALL" interactive ;
+    -- On removal, deassign VMSCURL$ROOT.
+    execute install "CONTINUE" remove "@PCSI$DESTINATION:[SYS$STARTUP]VMSCURL$STARTUP.COM REMOVE" ;
+
+    information POST_INSTALL phase after ;
+
+end product ;

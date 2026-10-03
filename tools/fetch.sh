@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# fetch.sh - download the PCRE2 release tarball named in upstream.conf into cache/,
+# fetch.sh - download the curl release tarball named in upstream.conf into cache/,
 # verify its SHA-256, and verify its GPG signature against keys/curl-signing-key.asc.
+# Also fetch the pinned CA bundle the kit ships, checked against its SHA-256.
 set -euo pipefail
 
 top=$(cd "$(dirname "$0")/.." && pwd)
@@ -18,7 +19,7 @@ echo "$UPSTREAM_SHA256  $tarball" | sha256sum -c --quiet - ||
     { echo "fetch: SHA-256 mismatch for $tarball" >&2; exit 1; }
 
 # A throwaway keyring holding only the pinned key shipped in the repo.
-keyring=$cache/pcre2-keyring.gpg
+keyring=$cache/curl-keyring.gpg
 rm -f "$keyring"
 gpg --no-default-keyring --keyring "$keyring" --import "$top/keys/curl-signing-key.asc" 2>/dev/null
 status=$(gpg --no-default-keyring --keyring "$keyring" --status-fd 1 \
@@ -28,3 +29,10 @@ echo "$status" | grep -q "^\[GNUPG:\] VALIDSIG .* $UPSTREAM_GPG_KEY\$" ||
     { echo "fetch: no valid signature by $UPSTREAM_GPG_KEY on $tarball" >&2; exit 1; }
 echo "fetch: signature OK ($UPSTREAM_GPG_KEY)"
 echo "fetch: $tarball"
+
+cabundle=$cache/$(basename "$CA_BUNDLE_URL")
+[ -f "$cabundle" ] || { echo "fetch: downloading $CA_BUNDLE_URL"
+                        curl -fsSL -o "$cabundle.tmp" "$CA_BUNDLE_URL"; mv "$cabundle.tmp" "$cabundle"; }
+echo "$CA_BUNDLE_SHA256  $cabundle" | sha256sum -c --quiet - ||
+    { echo "fetch: SHA-256 mismatch for $cabundle" >&2; exit 1; }
+echo "fetch: $cabundle"

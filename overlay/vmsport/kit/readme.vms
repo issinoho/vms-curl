@@ -1,0 +1,77 @@
+curl for OpenVMS (vms-curl)
+===========================
+
+This is curl @VERSION@ built natively for OpenVMS @ARCH@, from the
+unmodified curl release plus the patches in the vms-curl project:
+
+    https://github.com/issinoho/vms-curl
+
+Kit version: @KITVERSION@.  curl is distributed under the curl licence
+(MIT style); see COPYING.  The project follows curl's own releases, so the
+kit is updated soon after each new curl version.
+
+What is installed
+-----------------
+    VMSCURL$ROOT:[BIN]CURL.EXE      curl, with libcurl linked in
+    VMSCURL$ROOT:[SSL]CACERT.PEM    the default CA certificates
+    VMSCURL$ROOT:[DOC]              this file, COPYING, MANUAL.TXT,
+                                    SSLCERTS.TXT, RELEASE-NOTES
+    SYS$STARTUP:VMSCURL$STARTUP.COM defines VMSCURL$ROOT
+
+TLS uses VSI's OpenSSL 3.0 kit (SSL3), a prerequisite of this kit; zlib
+(for --compressed) is linked in.  LDAP uses the VMS LDAP library.  There
+is no HTTP/2, HTTP/3, SSH (scp/sftp) or Kerberos support in this build.
+
+Setting up
+----------
+The kit installs VMSCURL$STARTUP.COM into SYS$STARTUP and runs it once.
+To define VMSCURL$ROOT at every boot, the system manager adds this line to
+SYS$MANAGER:SYSTARTUP_VMS.COM:
+
+    $ @SYS$STARTUP:VMSCURL$STARTUP.COM
+
+Then define a foreign command (in SYLOGIN.COM or LOGIN.COM):
+
+    $ curl :== $VMSCURL$ROOT:[BIN]CURL.EXE
+
+VSI's own CURL kit uses CURL$ROOT and [CURL]; this kit uses VMSCURL$ROOT
+and [VMSCURL], so both can be installed.  The foreign command decides
+which one "curl" runs.
+
+CA certificates
+---------------
+curl verifies servers against VMSCURL$ROOT:[SSL]CACERT.PEM by default:
+Mozilla's root certificates as extracted by the curl project
+(https://curl.se/docs/caextract.html), dated @CABUNDLEDATE@.  To use other
+certificates, give --cacert file, or define the logical name
+CURL_CA_BUNDLE to a PEM file.  Newer kits bring a newer bundle.
+
+Upper-case options: the DCL parse style
+---------------------------------------
+Under the TRADITIONAL parse style DCL upper-cases the unquoted parts of a
+command and the C run-time library passes them to curl in lower case, so
+an unquoted -F arrives as -f (--fail) and -O as -o.  Batch jobs use
+TRADITIONAL even when interactive logins are set to EXTENDED, so a
+command that works interactively can fail in a batch job: a form post
+typically ends with %CURL-E-URL_MALFORMAT, because the form field is
+taken as a URL.  Either quote the options that use capital letters
+
+    $ curl "https://example.com/post" "-F" "name=value"
+
+or start the procedure with
+
+    $ SET PROCESS/PARSE_STYLE=EXTENDED
+
+When curl fails under TRADITIONAL, it names the unquoted options that may
+have lost their case.
+
+Exit status
+-----------
+curl exits with a VMS condition value: success, or %CURL-E-<error> with
+the curl error number in the message code (for example
+%CURL-E-URL_MALFORMAT).  Test $STATUS or $SEVERITY in procedures.
+
+Output
+------
+Output to the terminal, a batch log or a mailbox is written in records,
+one per line.  Use -o file to save a response exactly as received.
