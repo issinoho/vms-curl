@@ -1,0 +1,131 @@
+Subject: tool: on OpenVMS, explain options lowercased by the TRADITIONAL parse style
+
+Under the TRADITIONAL DCL parse style (the default, and what batch jobs
+run with) unquoted options lose their case: -F reaches curl as -f
+(--fail), so a form post fails with a confusing URL_MALFORMAT because the
+form field is taken as a second URL.  This is the usual cause of "curl
+fails silently in batch".  When curl exits with an error on __VMS, check
+the parse style and the raw command line (LIB$GET_FOREIGN); if unquoted
+options use letters that are curl options in both cases, print a note
+saying how to fix the command.  Successful runs and quoted options are
+not affected.
+
+--- a/src/tool_vms.h	2026-10-03 23:42:45.218838919 +0100
++++ b/src/tool_vms.h	2026-10-03 23:42:45.276542069 +0100
+@@ -36,6 +36,7 @@
+ 
+ int is_vms_shell(void);
+ void vms_special_exit(int code, int vms_show);
++void vms_parse_style_hint(void);
+ 
+ #undef exit
+ #define exit(__code) vms_special_exit(__code, 0)
+--- a/src/tool_vms.c	2026-10-03 23:42:45.226712932 +0100
++++ b/src/tool_vms.c	2026-10-03 23:42:45.276777887 +0100
+@@ -30,7 +30,14 @@
+ #include <unixlib.h>
+ #endif
+ 
++#include <ctype.h>
++#include <descrip.h>
++#include <jpidef.h>
++#include <lib$routines.h>
++#include <ppropdef.h>
++
+ #include "curlmsg_vms.h"
++#include "tool_getparam.h"
+ #include "tool_vms.h"
+ 
+ void decc$__posix_exit(int __status);
+@@ -105,6 +112,80 @@
+   decc$exit(vms_code);
+ }
+ 
++/*
++ * Under the TRADITIONAL DCL parse style (the default, and what batch jobs
++ * get even when interactive logins set EXTENDED), DCL upper-cases the
++ * unquoted parts of the command line and the C RTL lower-cases them again
++ * for argv, so an unquoted -F reaches curl as -f (--fail).  The command
++ * then fails in a confusing way, typically %CURL-E-URL_MALFORMAT because a
++ * form field is taken as a second URL.  Called when curl exits with an
++ * error: if the parse style is TRADITIONAL and the command line has
++ * unquoted options whose letter is a curl option in both cases, say so.
++ * Quoted options keep their case and are not reported.
++ */
++void vms_parse_style_hint(void)
++{
++  int item = JPI$_PARSE_STYLE_PERM;
++  unsigned int style = PARSE_STYLE$C_EXTENDED;
++  char line[4097];
++  unsigned short len = 0;
++  struct dsc$descriptor_s d;
++  char lower[2 * 52 + 1];
++  char upper[2 * 52 + 1];
++  size_t n = 0;
++  size_t i;
++  int quoted = 0;
++
++  if(!is_vms_shell())
++    return;
++  if(!(lib$getjpi(&item, 0, 0, &style, 0, 0) & 1) ||
++     style != PARSE_STYLE$C_TRADITIONAL)
++    return;
++
++  d.dsc$w_length = sizeof(line) - 1;
++  d.dsc$b_dtype = DSC$K_DTYPE_T;
++  d.dsc$b_class = DSC$K_CLASS_S;
++  d.dsc$a_pointer = line;
++  if(!(lib$get_foreign(&d, 0, &len, 0) & 1))
++    return;
++  line[len] = '\0';
++
++  for(i = 0; i < len; i++) {
++    if(line[i] == '"') {
++      quoted = !quoted;
++      continue;
++    }
++    if(quoted || line[i] != '-' || (i && line[i - 1] != ' ' &&
++                                    line[i - 1] != '\t'))
++      continue;
++    if(line[i + 1] == '-')        /* a long option: case does not matter */
++      continue;
++    for(i++; i < len && isalpha((unsigned char)line[i]); i++) {
++      char lc = (char)tolower((unsigned char)line[i]);
++      char uc = (char)toupper((unsigned char)line[i]);
++      if(findshortopt(lc) && findshortopt(uc) && !memchr(lower, lc, n) &&
++         n < sizeof(lower) - 2) {
++        lower[n] = lc;
++        upper[n] = uc;
++        n++;
++      }
++    }
++    i--;
++  }
++  if(!n)
++    return;
++
++  fputs("curl: note: the process parse style is TRADITIONAL: unquoted"
++        " options", tool_stderr);
++  for(i = 0; i < n; i++)
++    fprintf(tool_stderr, " -%c", lower[i]);
++  fputs(" reached curl in lower case.\ncurl: note: to pass", tool_stderr);
++  for(i = 0; i < n; i++)
++    fprintf(tool_stderr, " -%c", upper[i]);
++  fputs(", quote them (\"-F\") or SET PROCESS/PARSE_STYLE=EXTENDED"
++        " first.\n", tool_stderr);
++}
++
+ #if defined(__DECC) && !defined(__VAX) && \
+   defined(__CRTL_VER) && (__CRTL_VER >= 70301000)
+ 
+--- a/src/tool_main.c	2026-10-03 23:42:45.235250171 +0100
++++ b/src/tool_main.c	2026-10-03 23:42:45.277012879 +0100
+@@ -207,6 +207,8 @@
+ #endif
+ 
+ #ifdef __VMS
++  if(result)
++    vms_parse_style_hint();
+   vms_special_exit(result, vms_show);
+ #else
+   return (int)result;

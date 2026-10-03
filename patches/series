@@ -7,3 +7,4 @@
 0006-tool-formparse-fabdef-vms.patch
 0007-ldap-vms-no-ber-memvfree.patch
 0008-tool-vms-record-output.patch
+0009-tool-vms-parse-style-hint.patch
