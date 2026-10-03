@@ -1,0 +1,83 @@
+Subject: tool: on OpenVMS, write body and header output with putc
+
+For record-oriented output (a terminal, a batch job log, a mailbox) the VMS
+CRTL turns each fwrite item into a record, so a response body written as
+fwrite(buffer, 1, len) appeared one character per line.  Route the body,
+--dump-header and stored-header writes through tool_fwrite(), which on
+__VMS writes with putc so stdio assembles records at newlines.  Other
+platforms still call fwrite().
+
+--- a/src/tool_cb_wrt.h	2026-10-03 23:31:33.544618609 +0100
++++ b/src/tool_cb_wrt.h	2026-10-03 23:31:33.629912890 +0100
+@@ -34,4 +34,13 @@
+ bool tool_create_output_file(struct OutStruct *outs,
+                              struct OperationConfig *config);
+ 
++#ifdef __VMS
++/* fwrite for output that may be record-oriented; see tool_cb_wrt.c */
++size_t tool_vms_fwrite(const void *ptr, size_t size, size_t nmemb,
++                       FILE *stream);
++#define tool_fwrite(p, s, n, f) tool_vms_fwrite(p, s, n, f)
++#else
++#define tool_fwrite(p, s, n, f) fwrite(p, s, n, f)
++#endif
++
+ #endif /* HEADER_CURL_TOOL_CB_WRT_H */
+--- a/src/tool_cb_wrt.c	2026-10-03 23:31:33.556582928 +0100
++++ b/src/tool_cb_wrt.c	2026-10-03 23:31:33.630538879 +0100
+@@ -34,6 +34,26 @@
+ #define OPENMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+ #endif
+ 
++#ifdef __VMS
++/* When the stream is record-oriented (a terminal, a batch log, a mailbox),
++   the VMS CRTL writes every fwrite item as a separate record, so a body
++   written as fwrite(buffer, 1, len) came out one character per line.  putc
++   output is buffered into records at newlines like other stdio output. */
++size_t tool_vms_fwrite(const void *ptr, size_t size, size_t nmemb,
++                       FILE *stream)
++{
++  const unsigned char *p = ptr;
++  size_t n = size * nmemb;
++  size_t done = 0;
++  if(!size)
++    return 0;
++  for(; done < n; done++)
++    if(putc(p[done], stream) == EOF)
++      break;
++  return done / size;
++}
++#endif
++
+ /* create/open a local file for writing, return TRUE on success */
+ bool tool_create_output_file(struct OutStruct *outs,
+                              struct OperationConfig *config)
+@@ -337,7 +357,7 @@
+       if(tool_write_headers(&per->hdrcbdata, outs->stream))
+         return CURL_WRITEFUNC_ERROR;
+     }
+-    rc = fwrite(buffer, sz, nmemb, outs->stream);
++    rc = tool_fwrite(buffer, sz, nmemb, outs->stream);
+   }
+ 
+   if(bytes == rc)
+--- a/src/tool_cb_hdr.c	2026-10-03 23:31:33.567607162 +0100
++++ b/src/tool_cb_hdr.c	2026-10-03 23:31:33.631086575 +0100
+@@ -237,7 +237,7 @@
+   while(h) {
+     /* not "handled", show it */
+     size_t len = strlen(h->data);
+-    if(len != fwrite(h->data, 1, len, stream))
++    if(len != tool_fwrite(h->data, 1, len, stream))
+       goto fail;
+     h = h->next;
+   }
+@@ -449,7 +449,7 @@
+    */
+ 
+   if(per->config->headerfile && heads->stream) {
+-    size_t rc = fwrite(ptr, size, nmemb, heads->stream);
++    size_t rc = tool_fwrite(ptr, size, nmemb, heads->stream);
+     if(rc != nmemb)
+       return rc;
+     /* flush the stream to send off what we got earlier */

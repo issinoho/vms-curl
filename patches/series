@@ -6,3 +6,4 @@
 0005-vms-build-lib-subdirs.patch
 0006-tool-formparse-fabdef-vms.patch
 0007-ldap-vms-no-ber-memvfree.patch
+0008-tool-vms-record-output.patch
