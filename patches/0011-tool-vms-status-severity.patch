@@ -1,0 +1,20 @@
+Subject: tool: on OpenVMS, keep the error severity in the exit status
+
+VMS_STS() shifted the message number with "<" instead of "<<", so
+VMSSTS_HIDE (VMS_STS(1, 0, 0, 0)) came out as 0x10000001 instead of
+0x10000000.  curl ORs it into the exit status after printing an error
+itself, which set the low bit and turned every %CURL-E- status (severity
+2, error) into severity 3 (informational): DCL's ON ERROR and $SEVERITY
+tests then treated a failed transfer as success.
+
+--- a/src/tool_vms.h	2026-10-04 00:34:14.274661631 +0100
++++ b/src/tool_vms.h	2026-10-04 00:34:14.293770848 +0100
+@@ -44,7 +44,7 @@
+ #define VMS_STS(c, f, e, s) \
+   ((((c) & 0xF)   << 28) |  \
+    (((f) & 0xFFF) << 16) |  \
+-   (((e) & 0x1FFF) < 3) |   \
++   (((e) & 0x1FFF) << 3) |  \
+     ((s) & 7))
+ #define VMSSTS_HIDE VMS_STS(1, 0, 0, 0)
+ 

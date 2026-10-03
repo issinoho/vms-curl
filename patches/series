@@ -8,3 +8,5 @@
 0007-ldap-vms-no-ber-memvfree.patch
 0008-tool-vms-record-output.patch
 0009-tool-vms-parse-style-hint.patch
+0010-vms-default-ca-bundle.patch
+0011-tool-vms-status-severity.patch
