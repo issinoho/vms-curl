@@ -1,0 +1,6 @@
+# Ordered list of patches applied to the upstream tree (one per line).
+0001-vms-vsi-ssl-and-static-zlib.patch
+0002-vms-x86-64-arch-name.patch
+0003-vms-build-config-template.patch
+0004-vms-config-feature-switches.patch
+0005-vms-build-lib-subdirs.patch

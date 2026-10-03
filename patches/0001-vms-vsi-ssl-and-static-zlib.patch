@@ -1,0 +1,112 @@
+Subject: projects/vms: link VSI SSL kits (SSL3, SSL31, ...) and a static zlib
+
+build_vms.com knew HP SSL (SSL$INCLUDE, SYS$SHARE:SSL$LIB*_SHR) and generic
+OpenSSL builds.  VSI's current kits each install <kit>$INCLUDE and
+SYS$SHARE:<kit>$LIBSSL_SHR[32].EXE; when OPENSSL names one of their include
+directories (e.g. "SSL3$INCLUDE:"), link that kit's images.  On a system
+that also has the old HP SSL (SSL V1.4, still installed on IA64), curl
+would otherwise have been linked against it.
+
+zlib: besides the GNV and JFP shared images, accept a static zlib in the
+rooted logical ZLIB$ROOT ([INCLUDE]ZLIB.H, [LIB]LIBZ.OLB), as built by
+github.com/issinoho/vms-zlib; generate_config_vms_h_curl.com then defines
+HAVE_LIBZ.
+
+generate_config_vms_h_curl.com wrote config_vms.h to sys$disk:[curl.lib],
+which only exists when the tree is a top-level [CURL]; write [.lib] (it runs
+from the top of the tree).
+
+--- a/projects/vms/build_vms.com	2026-10-03 22:04:40.191689446 +0100
++++ b/projects/vms/build_vms.com	2026-10-03 22:04:40.216256069 +0100
+@@ -550,19 +550,33 @@
+ $   if (f$trnlnm("OPENSSL") .nes. "")
+ $   then
+ $!        cc_defs = cc_defs + ", USE_OPENSSL=1"
+-$        if ((f$trnlnm("SSL$INCLUDE") .nes. "") .and. (.not. nohpssl))
++$!
++$!       VSI's SSL kits (SSL1, SSL111, SSL3, SSL31, ...) each define
++$!       <kit>$INCLUDE and ship SYS$SHARE:<kit>$LIBSSL_SHR[32].EXE.  When
++$!       OPENSSL names one of their include directories (OPENSSL =
++$!       "SSL3$INCLUDE:"), link that kit's images, not HP SSL's SSL$ ones.
++$        sslkit = "ssl"
++$        ossl_lnm = f$edit(f$trnlnm("OPENSSL"), "UPCASE")
++$        if f$locate("$INCLUDE", ossl_lnm) .lt. f$length(ossl_lnm)
++$        then
++$            kit = f$edit(f$element(0, "$", ossl_lnm), "LOWERCASE")
++$            if f$search("sys$share:''kit'$libssl_shr32.exe") .nes. "" then -
++                sslkit = kit
++$        endif
++$        if ((f$trnlnm("SSL$INCLUDE") .nes. "") .and. (.not. nohpssl)) .or. -
++            (sslkit .nes. "ssl")
+ $        then
+ $!          Use HP SSL.
+ $           hpssl = 1
+ $!
+ $!          Older SSL only has lib*_shr32 images
+ $!-----------------------------------------------
+-$           libsslshr = "sys$share:ssl$libssl_shr"
++$           libsslshr = "sys$share:''sslkit'$libssl_shr"
+ $           if (f$search("''libsslshr'.exe") .eqs. "") .or. (.not. build_64)
+ $           then
+ $               libsslshr = libsslshr + "32"
+ $           endif
+-$           libcryptoshr = "sys$share:ssl$libcrypto_shr"
++$           libcryptoshr = "sys$share:''sslkit'$libcrypto_shr"
+ $           if (f$search("''libcryptoshr'.exe") .eqs. "") .or. (.not. build_64)
+ $           then
+ $               libcryptoshr = libcryptoshr + "32"
+@@ -635,6 +649,19 @@
+ $!
+ $! LIBZ
+ $ libzshr_line = ""
++$!
++$! A static zlib in the rooted logical ZLIB$ROOT ([INCLUDE]ZLIB.H,
++$! [LIB]LIBZ.OLB) is preferred to the GNV or JFP shared images.
++$ if (nozlib .eq. 0) .and. (f$trnlnm("ZLIB$ROOT") .nes. "")
++$ then
++$   if f$search("ZLIB$ROOT:[LIB]LIBZ.OLB") .nes. ""
++$   then
++$       'vo_c' "%CURL-I-BLDZLIBOLB, building with static ZLIB (ZLIB$ROOT)"
++$       libzshr_line = "ZLIB$ROOT:[LIB]LIBZ.OLB/LIBRARY"
++$       curl_sys_zlibinc = "ZLIB$ROOT:[INCLUDE]"
++$       goto libz_done
++$   endif
++$ endif
+ $ try_shr = "gnv$libzshr"
+ $ if build_64
+ $ then
+@@ -675,6 +702,7 @@
+ $       curl_sys_zlibinc = "GNV$ZLIB_INCLUDE:"
+ $   endif
+ $ endif
++$libz_done:
+ $!
+ $! Form CC qualifiers.
+ $!
+--- a/projects/vms/generate_config_vms_h_curl.com	2026-10-03 22:04:40.195507312 +0100
++++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-03 22:08:05.830864060 +0100
+@@ -164,9 +164,9 @@
+ $endif
+ $!
+ $!
+-$! Is GNV compatible LIBZ present?
++$! Is GNV compatible LIBZ present, or a static zlib in ZLIB$ROOT?
+ $!------------------------------------------------------
+-$if f$trnlnm("GNV$LIBZSHR") .nes. ""
++$if (f$trnlnm("GNV$LIBZSHR") .nes. "") .or. (f$trnlnm("ZLIB$ROOT") .nes. "")
+ $then
+ $   if f$locate(",nozlib,", args_lower) .lt. args_len
+ $   then
+@@ -186,8 +186,10 @@
+ $! Start the configuration file.
+ $! Need to do a create and then an append to make the file have the
+ $! typical file attributes of a VMS text file.
+-$create sys$disk:[curl.lib]config_vms.h
+-$open/append cvh sys$disk:[curl.lib]config_vms.h
++$! (Relative to the top of the tree, the default directory when BUILD_VMS
++$! runs this: [CURL.LIB] only worked for a tree in a top-level [CURL].)
++$create sys$disk:[.lib]config_vms.h
++$open/append cvh sys$disk:[.lib]config_vms.h
+ $!
+ $! Write the defines to prevent multiple includes.
+ $! These are probably not needed in this case,

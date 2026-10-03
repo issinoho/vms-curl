@@ -1,0 +1,56 @@
+Subject: projects/vms/build_vms.com: build curl 8.x's lib subdirectories; x86-64 debug
+
+build_vms.com compiled only lib/ and lib/vtls/.  curl now also has
+lib/curlx, lib/vauth, lib/vdns, lib/vquic and lib/vssh; compile those into
+CURLLIB.OLB too.  Their sources (and vtls's) include headers as
+"curlx/warnless.h", which VSI C resolves only against a Unix-style include
+directory ("../"), not a VMS one ([--.lib]), so use those, also for src/.
+
+VSI C 7.7 on x86-64 crashes (ACCVIO in DECC$COMPILER) compiling
+lib/formdata.c with full /DEBUG; compile with /DEBUG=TRACEBACK there.
+
+--- a/projects/vms/build_vms.com	2026-10-03 23:02:01.315877888 +0100
++++ b/projects/vms/build_vms.com	2026-10-03 23:02:14.695851175 +0100
+@@ -290,6 +290,9 @@
+ $    cc_large = ""
+ $ else
+ $    cc_debug = "/debug/optimize"
++$!   VSI C 7.7 on x86-64 crashes (ACCVIO in DECC$COMPILER) compiling
++$!   lib/formdata.c with full /DEBUG; traceback information is enough.
++$    if arch_name .eqs. "X86_64" then cc_debug = "/debug=traceback/optimize"
+ $    cc_defs = cc_defs + ",_USE_STD_STAT"
+ $    cc_float = "/float=ieee/ieee_mode=denorm_results"
+ $    cc_large = ",_LARGEFILE"
+@@ -854,13 +857,26 @@
+ $ cc_include = cc_include + ",[-.projects.vms.''arch_name'])"
+ $ call build "[--.lib]" "*.c" "''objdir'CURLLIB.OLB" "amigaos, nwlib, nwos"
+ $ if ($status .eq. ctrl_y) then goto Common_Exit
+-$! Build VTLS
+-$ cc_include = "/include=([--.lib.vtls],[--.lib],[--.src]"
+-$ cc_include = cc_include + ",[--.projects.vms],[--.projects.vms.''arch_name'])"
+-$ call build "[--.lib.vtls]" "*.c" "''objdir'CURLLIB.OLB" "amigaos, nwlib, nwos"
++$! Build the lib subdirectories (vtls, and curlx, vauth, vdns, vquic and
++$! vssh, which newer curl releases added).  Their sources include headers
++$! as "curlx/warnless.h" etc.: VSI C resolves such a path only against a
++$! Unix-style include directory ("../"), not a VMS one ([--.lib]).
++$ cc_include = "/include=(""./"",""../"",""../../src"",""../../projects/vms""" + -
++    ",""../../projects/vms/''arch_name'"")"
++$ lib_subdirs = "vtls,curlx,vauth,vdns,vquic,vssh"
++$ lib_sub_i = 0
++$lib_sub_loop:
++$ lib_sub = f$element(lib_sub_i, ",", lib_subdirs)
++$ if lib_sub .eqs. "," then goto lib_sub_done
++$ lib_sub_i = lib_sub_i + 1
++$ if f$search("[--.lib]''lib_sub'.DIR") .eqs. "" then goto lib_sub_loop
++$ call build "[--.lib.''lib_sub']" "*.c" "''objdir'CURLLIB.OLB" "amigaos, nwlib, nwos"
++$ if ($status .eq. ctrl_y) then goto Common_Exit
++$ goto lib_sub_loop
++$lib_sub_done:
+ $! Build SRC
+-$ cc_include = "/include=([-.src],[-.lib],[-.lib.vtls]"
+-$ cc_include = cc_include + ",[-.projects.vms],[-.projects.vms.''arch_name'])"
++$ cc_include = "/include=(""./"",""../lib"",""../lib/vtls"",""../projects/vms""" + -
++    ",""../projects/vms/''arch_name'"")"
+ $ call build "[--.src]" "*.c" "''objdir'CURLSRC.OLB"
+ $ if ($status .eq. ctrl_y) then goto Common_Exit
+ $! Build MSG

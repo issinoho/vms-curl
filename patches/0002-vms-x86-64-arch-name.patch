@@ -1,0 +1,83 @@
+Subject: projects/vms: recognise OpenVMS x86-64 (ARCH_NAME, not HW_MODEL)
+
+The procedures took HW_MODEL < 1024 to mean VAX, which is also true on
+x86-64, so build_vms.com built x86-64 in a [.VAX] directory with VAX
+settings (no IEEE floating point, VAX link options).  Test ARCH_NAME.
+
+--- a/projects/vms/build_curl-config_script.com	2026-10-03 22:08:49.768602306 +0100
++++ b/projects/vms/build_curl-config_script.com	2026-10-03 22:08:49.771910244 +0100
+@@ -23,7 +23,7 @@
+ $! Skip this if the curl-config. already exists.
+ $ if f$search("[--]curl-config.") .nes. "" then goto all_exit
+ $!
+-$ if (f$getsyi("HW_MODEL") .lt. 1024)
++$ if (f$getsyi("ARCH_NAME") .eqs. "VAX")
+ $ then
+ $    arch_name = "VAX"
+ $ else
+--- a/projects/vms/build_libcurl_pc.com	2026-10-03 22:08:49.773505215 +0100
++++ b/projects/vms/build_libcurl_pc.com	2026-10-03 22:08:49.776858395 +0100
+@@ -62,7 +62,7 @@
+ $    endif
+ $ endif
+ $!
+-$ if (f$getsyi("HW_MODEL") .lt. 1024)
++$ if (f$getsyi("ARCH_NAME") .eqs. "VAX")
+ $ then
+ $    arch_name = "VAX"
+ $ else
+--- a/projects/vms/generate_config_vms_h_curl.com	2026-10-03 22:08:49.778583354 +0100
++++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-03 22:08:49.781789861 +0100
+@@ -42,7 +42,7 @@
+ $!
+ $args_len = f$length(args)
+ $!
+-$if (f$getsyi("HW_MODEL") .lt. 1024)
++$if (f$getsyi("ARCH_NAME") .eqs. "VAX")
+ $then
+ $   arch_name = "VAX"
+ $else
+--- a/projects/vms/generate_vax_transfer.com	2026-10-03 22:08:49.783556147 +0100
++++ b/projects/vms/generate_vax_transfer.com	2026-10-03 22:08:49.786853967 +0100
+@@ -39,7 +39,7 @@
+ $ tab[0,8] = 9
+ $!
+ $! This procedure is used on VAX only
+-$ if (f$getsyi("HW_MODEL") .ge. 1024)
++$ if (f$getsyi("ARCH_NAME") .nes. "VAX")
+ $ then
+ $   write sys$output "This procedure is only used on VAX."
+ $   goto all_exit
+--- a/projects/vms/compare_curl_source.com	2026-10-03 22:08:49.788579581 +0100
++++ b/projects/vms/compare_curl_source.com	2026-10-03 22:08:49.791653903 +0100
+@@ -170,7 +170,7 @@
+ $ NFS_MANGLE = 0
+ $ PWRK_MANGLE = 0
+ $!
+-$ vax = f$getsyi("HW_MODEL") .lt. 1024
++$ vax = f$getsyi("ARCH_NAME") .eqs. "VAX"
+ $ if vax
+ $ then
+ $   ODS2_SYNTAX = 1
+--- a/projects/vms/build_vms.com	2026-10-03 22:08:49.793450432 +0100
++++ b/projects/vms/build_vms.com	2026-10-03 22:08:49.796385852 +0100
+@@ -222,7 +222,7 @@
+ $! name(s).
+ $!
+ $ parse_style = "TRADITIONAL"
+-$ if (f$getsyi("HW_MODEL") .lt. 1024)
++$ if (f$getsyi("ARCH_NAME") .eqs. "VAX")
+ $ then
+ $    arch_name = "VAX"
+ $ else
+--- a/projects/vms/gnv_link_curl.com	2026-10-03 22:08:49.798324665 +0100
++++ b/projects/vms/gnv_link_curl.com	2026-10-03 22:08:49.801428059 +0100
+@@ -28,7 +28,7 @@
+ $!
+ $! On VAX, we need to generate a Macro transfer vector.
+ $ parse_style = "TRADITIONAL"
+-$ if (f$getsyi("HW_MODEL") .lt. 1024)
++$ if (f$getsyi("ARCH_NAME") .eqs. "VAX")
+ $ then
+ $   @generate_vax_transfer.com
+ $   arch_name = "VAX"

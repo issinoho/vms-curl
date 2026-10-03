@@ -1,0 +1,123 @@
+Subject: projects/vms: do not guess feature switches from configure; x86-64; sizes; GSS-API
+
+For a macro it does not know, config_h.com greps the Unix configure script
+for NAME=value and defines NAME so.  curl's configure assigns USE_GNUTLS=yes,
+USE_LIBPSL=1, CURL_DISABLE_HTTP=1 ... in branches for options that were not
+chosen, so curl 8.22.0 was configured with every TLS back end, libpsl,
+nghttp2/3, ngtcp2, libssh and libuv, and without HTTP, FTP and the rest.
+Leave USE_*, CURL_DISABLE_*, CURL_ENABLE_* and CURL_WITH_* undefined (curl's
+defaults); config_vms.h defines the ones this build uses (USE_OPENSSL,
+HAVE_LIBZ).
+
+generate_config_vms_h_curl.com (config_vms.h, included last):
+- CURL_OS "X86_64-HP-VMS" on x86-64 (was "UNKNOWN-HP-VMS");
+- SIZEOF_CURL_OFF_T (8) and SIZEOF_CURL_SOCKET_T (4), which config_h.com
+  cannot work out ("too small curl_off_t");
+- without Kerberos, undefine HAVE_GSSAPI and its header macros, which
+  config_h.com also took from configure (also when gssapi_krb5.h, which
+  curl includes, is not installed); fix the sys$shsare typo in the
+  Kerberos check;
+- undefine HAVE_FNMATCH when the CRTL has no <fnmatch.h> (IA64), and
+  HAVE_ACCEPT4: the x86-64 CRTL has accept4() but not SOCK_NONBLOCK and
+  SOCK_CLOEXEC.
+
+
+--- a/projects/vms/config_h.com	2026-10-03 22:43:53.474433109 +0100
++++ b/projects/vms/config_h.com	2026-10-03 22:43:53.498957030 +0100
+@@ -1667,6 +1667,21 @@
+ $           write tf "#endif"
+ $       endif
+ $!
++$!      Feature switches (USE_*, CURL_DISABLE_*, CURL_ENABLE_*, CURL_WITH_*)
++$!      must not be guessed from CONFIGURE: it assigns them in branches for
++$!      options that were not chosen (USE_GNUTLS=yes, CURL_DISABLE_HTTP=1),
++$!      so every back end was enabled and HTTP disabled.  Leave them
++$!      undefined; config_vms.h defines the ones this build uses.
++$!-----------------------------------------------------------------------
++$       if (f$extract(0, 4, key2) .eqs. "USE_") .or. -
++           (f$extract(0, 13, key2) .eqs. "CURL_DISABLE_") .or. -
++           (f$extract(0, 12, key2) .eqs. "CURL_ENABLE_") .or. -
++           (f$extract(0, 10, key2) .eqs. "CURL_WITH_")
++$       then
++$           write tf "/* ", xline, " */"
++$           goto cfgh_in_loop1
++$       endif
++$!
+ $!      Unknown - See if CONFIGURE can give a clue for this
+ $!----------------------------------------------------------
+ $       pflag = 0
+--- a/projects/vms/generate_config_vms_h_curl.com	2026-10-03 22:43:53.479092349 +0100
++++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-03 23:02:14.702851599 +0100
+@@ -157,10 +157,14 @@
+ $if .not. nokerberos
+ $then
+ $!  If kerberos is installed: sys$share:gss$rtl.exe exists.
+-$   if f$search("sys$shsare:gss$rtl.exe") .eqs. ""
++$   if f$search("sys$share:gss$rtl.exe") .eqs. ""
+ $   then
+ $       nokerberos = 1
+ $   endif
++$!  curl's GSS-API code includes <gssapi/gssapi_krb5.h>, which VMS's
++$!  Kerberos does not always install; without it GSS-API cannot be built.
++$   if f$search("sys$sysroot:[kerberos.include]gssapi_krb5.h") .eqs. "" then -
++        nokerberos = 1
+ $endif
+ $!
+ $!
+@@ -209,11 +213,55 @@
+ $write cvh "#elif defined(__vax)"
+ $write cvh "#define CURL_OS ""VAX-HP-VMS"""
+ $write cvh "#elif defined(__ia64)"
+-$write cvh "#define CURL_OS ""IA64-HP-VMS""
++$write cvh "#define CURL_OS ""IA64-HP-VMS"""
++$write cvh "#elif defined(__x86_64)"
++$write cvh "#define CURL_OS ""X86_64-HP-VMS"""
+ $write cvh "#else"
+ $write cvh "#define CURL_OS ""UNKNOWN-HP-VMS""
+ $write cvh "#endif"
+ $write cvh ""
++$write cvh "/* Sizes config_h.com cannot work out: curl_off_t is long long and"
++$write cvh "   curl_socket_t an int on OpenVMS.  curl requires a 64-bit curl_off_t. */"
++$write cvh "#ifndef SIZEOF_CURL_OFF_T"
++$write cvh "#define SIZEOF_CURL_OFF_T 8"
++$write cvh "#endif"
++$write cvh "#ifndef SIZEOF_CURL_SOCKET_T"
++$write cvh "#define SIZEOF_CURL_SOCKET_T 4"
++$write cvh "#endif"
++$!
++$! config_h.com defines HAVE_GSSAPI and its header macros from configure;
++$! without Kerberos (the gssapi headers are often not installed) undo that.
++$if nokerberos
++$then
++$   write cvh ""
++$   write cvh "/* Built without Kerberos / GSS-API */"
++$   write cvh "#undef HAVE_GSSAPI"
++$   write cvh "#undef HAVE_GSSAPI_GSSAPI_H"
++$   write cvh "#undef HAVE_GSSAPI_GSSAPI_GENERIC_H"
++$   write cvh "#undef HAVE_GSSAPI_GSSAPI_KRB5_H"
++$endif
++$!
++$! config_h.com finds fnmatch(), but not every CRTL has <fnmatch.h> (IA64
++$! does not): use curl's own implementation unless the header is there.
++$set noon
++$define/user sys$output nla0:
++$define/user sys$error nla0:
++$library/list=nla0:/only=FNMATCH sys$library:decc$rtldef.tlb
++$have_fnmatch_h = $severity .eq. 1
++$set on
++$if .not. have_fnmatch_h
++$then
++$   write cvh ""
++$   write cvh "/* No <fnmatch.h> in this CRTL */"
++$   write cvh "#undef HAVE_FNMATCH"
++$endif
++$!
++$! The x86-64 CRTL has accept4(), but not the SOCK_NONBLOCK / SOCK_CLOEXEC
++$! flags curl passes to it; use accept() and fcntl() as elsewhere.
++$write cvh ""
++$write cvh "/* accept4() without SOCK_NONBLOCK / SOCK_CLOEXEC */"
++$write cvh "#undef HAVE_ACCEPT4"
++$write cvh ""
+ $!
+ $! We are now setting this on the GNV build, so also do this
+ $! for compatibility.

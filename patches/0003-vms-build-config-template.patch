@@ -1,0 +1,21 @@
+Subject: projects/vms/build_vms.com: use curl_config.h.in, not the CMake template
+
+The template was found with f$search("[.lib]curl_config*.*in").  curl now
+also ships lib/curl_config-cmake.h.in, which sorts first, so config_h.com
+was fed #cmakedefine lines it does not understand: curl_config.h lacked
+SIZEOF_CURL_OFF_T, HAVE_RECV, HAVE_STRUCT_TIMEVAL ... and nothing compiled
+("Missing definition of macro sread", "too small curl_off_t").
+
+--- a/projects/vms/build_vms.com	2026-10-03 22:10:18.792217436 +0100
++++ b/projects/vms/build_vms.com	2026-10-03 22:10:18.811258713 +0100
+@@ -822,7 +822,9 @@
+ $   @'proc_dev_dir'generate_config_vms_h_curl.com ''conf_params'
+ $!
+ $   write sys$output "Generating curl_config.h"
+-$   conf_in = f$search("[.lib]curl_config*.*in")
++$!  curl_config.h.in, not curl_config-cmake.h.in, which the wildcard found
++$!  first and config_h.com cannot read (#cmakedefine).
++$   conf_in = f$search("[.lib]curl_config.h.in")
+ $   if conf_in .eqs. ""
+ $   then
+ $       write sys$output "Can not find [.lib]curl_config*.*in file!"
