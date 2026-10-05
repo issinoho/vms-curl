@@ -15,8 +15,8 @@ same family as [GNU grep](https://github.com/issinoho/vms-grep),
 [GNU Bison](https://github.com/issinoho/vms-bison), [flex](https://github.com/issinoho/vms-flex),
 [GNU Wget](https://github.com/issinoho/vms-wget), [PCRE2](https://github.com/issinoho/vms-pcre2),
 [zlib](https://github.com/issinoho/vms-zlib), [bzip2](https://github.com/issinoho/vms-bzip2),
-[XZ Utils](https://github.com/issinoho/vms-xz) and [Zstandard](https://github.com/issinoho/vms-zstd)
-for OpenVMS.
+[XZ Utils](https://github.com/issinoho/vms-xz), [Zstandard](https://github.com/issinoho/vms-zstd)
+and [MariaDB](https://github.com/issinoho/vms-mariadb) for OpenVMS.
 
 curl ships its own OpenVMS build (`projects/vms/build_vms.com`) in the release tarball. This
 repository builds with it and holds **only our changes**: every build starts from the signed
@@ -154,7 +154,7 @@ described in
 2. Patches 0002-0007 and 0011 offered to curl (0011, the exit-severity fix, also affects VSI's curl).
 3. A port to OpenVMS **Alpha**.
 
-The family of ports, all for IA64 and x86-64, each following its upstream releases:
+The family of ports, all for IA64 and x86-64 (MariaDB: x86-64 only), each following its upstream releases:
 
 | Port | Latest release | |
 |---|---|---|
@@ -174,6 +174,7 @@ The family of ports, all for IA64 and x86-64, each following its upstream releas
 | GNU make — [vms-make](https://github.com/issinoho/vms-make) | [v4.4.1-vms1](https://github.com/issinoho/vms-make/releases/tag/v4.4.1-vms1) | built with make's own VMS port |
 | GNU diffutils — [vms-diffutils](https://github.com/issinoho/vms-diffutils) | [v3.12-vms1](https://github.com/issinoho/vms-diffutils/releases/tag/v3.12-vms1) | cmp, diff, diff3, sdiff |
 | GNU patch — [vms-patch](https://github.com/issinoho/vms-patch) | [v2.8-vms1](https://github.com/issinoho/vms-patch/releases/tag/v2.8-vms1) | applies diffs |
+| MariaDB — [vms-mariadb](https://github.com/issinoho/vms-mariadb) | [v11.4.13-vms1](https://github.com/issinoho/vms-mariadb/releases/tag/v11.4.13-vms1) | server and clients; x86-64 only, preview |
 
 ## Artwork
 
