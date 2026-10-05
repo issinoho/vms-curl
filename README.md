@@ -5,12 +5,16 @@
 # curl for OpenVMS
 
 [curl](https://curl.se) (**8.22.0**) built natively for OpenVMS on **IA64** and **x86-64**,
-following curl's own releases rather than any vendor's release cycle. VSI ships a CURL kit,
-but it follows VSI's slower release cycle; this port tracks upstream curl in lock-step. It
-belongs to the same family as [GNU grep](https://github.com/issinoho/vms-grep),
-[PCRE2](https://github.com/issinoho/vms-pcre2), [GNU sed](https://github.com/issinoho/vms-sed),
-[GNU awk](https://github.com/issinoho/vms-awk) and [zlib](https://github.com/issinoho/vms-zlib)
-for OpenVMS.
+following curl's own releases rather than any vendor's release cycle. VSI ships a CURL kit, but it
+follows VSI's slower release cycle; this port tracks upstream curl in lock-step. It belongs to the
+same family as [GNU grep](https://github.com/issinoho/vms-grep),
+[GNU sed](https://github.com/issinoho/vms-sed), [GNU awk](https://github.com/issinoho/vms-awk),
+[GNU make](https://github.com/issinoho/vms-make),
+[GNU diffutils](https://github.com/issinoho/vms-diffutils),
+[GNU patch](https://github.com/issinoho/vms-patch), [GNU m4](https://github.com/issinoho/vms-m4),
+[GNU Bison](https://github.com/issinoho/vms-bison), [flex](https://github.com/issinoho/vms-flex),
+[GNU Wget](https://github.com/issinoho/vms-wget), [PCRE2](https://github.com/issinoho/vms-pcre2) and
+[zlib](https://github.com/issinoho/vms-zlib) for OpenVMS.
 
 curl ships its own OpenVMS build (`projects/vms/build_vms.com`) in the release tarball. This
 repository builds with it and holds **only our changes**: every build starts from the signed
