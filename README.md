@@ -24,8 +24,9 @@ release tarball (Daniel Stenberg's key, pinned in `keys/`), applies our patches 
 VMS files in `vmsport/`.
 
 - **TLS:** VSI's OpenSSL 3.0 kit (SSL3), linked through its shared images.
-- **zlib:** [vms-zlib](https://github.com/issinoho/vms-zlib), linked statically
-  (`--compressed`).
+- **zlib and zstd:** [vms-zlib](https://github.com/issinoho/vms-zlib) and
+  [vms-zstd](https://github.com/issinoho/vms-zstd), linked statically, so `--compressed`
+  accepts gzip, deflate and zstd.
 - **CA certificates:** the kit ships curl.se's extract of Mozilla's root store and curl
   uses it by default, so HTTPS works without `--cacert`.
 
@@ -34,16 +35,16 @@ VMS files in `vmsport/`.
 | | IA64 (OpenVMS V8.4-2L3, VSI C 7.4) | x86-64 (OpenVMS E9.2-4, VSI C 7.7) |
 |---|---|---|
 | Builds with upstream's `build_vms.com` | yes | yes |
-| Smoke test (HTTP, HTTPS with the default CA bundle, `--compressed`, batch output, errors) | 8/8 | 8/8 |
+| Smoke test (HTTP, HTTPS with the default CA bundle, `--compressed` with gzip and zstd, batch output, errors) | 10/10 | 10/10 |
 | Form post from a batch job | yes | yes |
-| PCSI kit ([v8.22.0-vms1](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms1)) | `ISSINOHO-I64VMS-VMSCURL-V0822-0E1-1.PCSI` | `ISSINOHO-X86VMS-VMSCURL-V0822-0E1-1.PCSI` |
+| PCSI kit ([v8.22.0-vms2](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms2)) | `ISSINOHO-I64VMS-VMSCURL-V0822-0E2-1.PCSI` | `ISSINOHO-X86VMS-VMSCURL-V0822-0E2-1.PCSI` |
 
 `curl --version` on x86-64:
 
 ```
-curl 8.22.0 (X86_64-HP-VMS) libcurl/8.22.0 OpenSSL/3.0.21 zlib/1.3.2 LDAP/1
+curl 8.22.0 (X86_64-HP-VMS) libcurl/8.22.0 OpenSSL/3.0.21 zlib/1.3.2 zstd/1.5.7 LDAP/1
 Protocols: dict file ftp ftps gopher gophers http https imap imaps ipfs ipns ldap ldaps mqtt mqtts pop3 pop3s rtsp smtp smtps telnet tftp ws wss
-Features: alt-svc HSTS HTTPS-proxy HTTPSIG IPv6 Largefile libz SSL
+Features: alt-svc HSTS HTTPS-proxy HTTPSIG IPv6 Largefile libz SSL zstd
 ```
 
 There is no HTTP/2, HTTP/3, SSH (scp/sftp) or Kerberos support in this build.
@@ -56,16 +57,17 @@ against the release's `SHA256SUMS`. A kit downloaded through a non-VMS system lo
 record format, so restore that first, then install it:
 
 ```
-$ SET FILE/ATTRIBUTE=(RFM:FIX,LRL:8192,MRS:8192,RAT:NONE) ISSINOHO-*-VMSCURL-V0822-0E1-1.PCSI
+$ SET FILE/ATTRIBUTE=(RFM:FIX,LRL:8192,MRS:8192,RAT:NONE) ISSINOHO-*-VMSCURL-V0822-0E2-1.PCSI
 $ PRODUCT INSTALL VMSCURL /PRODUCER=ISSINOHO /SOURCE=dev:[dir]
-$ curl :== $VMSCURL$ROOT:[BIN]CURL.EXE
+$ @VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM
 ```
 
 It installs `CURL.EXE` under `[VMSCURL.BIN]`, the CA bundle as `[VMSCURL.SSL]CACERT.PEM`,
-the documentation in `[VMSCURL.DOC]`, and `SYS$STARTUP:VMSCURL$STARTUP.COM`, which defines
+`VMSCURL$SETUP.COM` (defines the `curl` command; add it to `LOGIN.COM`), the documentation
+in `[VMSCURL.DOC]`, and `SYS$STARTUP:VMSCURL$STARTUP.COM`, which defines
 `VMSCURL$ROOT` (add `$ @SYS$STARTUP:VMSCURL$STARTUP.COM` to `SYS$MANAGER:SYSTARTUP_VMS.COM`
 to define it at every boot). `PRODUCT REMOVE VMSCURL` removes it and deassigns
-`VMSCURL$ROOT`. The kit's version `V8.22-0E1` is curl 8.22.0 with our patch level as the
+`VMSCURL$ROOT`. The kit's version `V8.22-0E2` is curl 8.22.0 with our patch level as the
 ECO.
 
 **Alongside VSI's CURL kit:** VSI's kit uses `[CURL]`, `CURL$ROOT` and `CURL$STARTUP.COM`;
@@ -120,13 +122,15 @@ and `IF .NOT. $STATUS` work.
 | 0009 | `src/tool_vms.c`: when curl fails under the TRADITIONAL parse style, name the unquoted options that lost their case. |
 | 0010 | `generate_config_vms_h_curl.com`: compile in a default CA bundle given by the logical name `CURL_CA_BUNDLE_DEFAULT` at build time. |
 | 0011 | `src/tool_vms.h`: fix `VMS_STS()` (`<` for `<<`), which set the low bit of every error exit status and made `%CURL-E-` failures severity 3 (informational), so `ON ERROR` and `$SEVERITY` tests saw success. |
+| 0012 | `build_vms.com`, `generate_config_vms_h_curl.com`: link libzstd statically from `ZSTD$ROOT` and define `HAVE_ZSTD` (`Content-Encoding: zstd`). |
 
 Patches 0002-0007 and 0011 fix upstream's VMS support or plain bugs and could go back to curl.
 
 ## How to build
 
-The build needs VSI's SSL3 kit and a [vms-zlib](https://github.com/issinoho/vms-zlib)
-install tree in the same work directory (`ZLIB_TREE` in `upstream.conf`).
+The build needs VSI's SSL3 kit, and [vms-zlib](https://github.com/issinoho/vms-zlib) and
+[vms-zstd](https://github.com/issinoho/vms-zstd) install trees in the same work directory
+(`ZLIB_TREE` and `ZSTD_TREE` in `upstream.conf`).
 
 ```sh
 git clone https://github.com/issinoho/vms-curl.git
@@ -138,7 +142,8 @@ tools/kit.sh ia64           # PCSI kit -> out/kits/
 ```
 
 By hand on VMS: copy the top-level files of `staging/curl-8.22.0/` and its `include`, `lib`,
-`src`, `projects` and `vmsport` directories, define `ZLIB$ROOT` for the zlib install tree,
+`src`, `projects` and `vmsport` directories, define `ZLIB$ROOT` and `ZSTD$ROOT` for the
+zlib and zstd install trees,
 then `@[.VMSPORT]BUILD` and `@[.VMSPORT]TEST_SMOKE`. Set up `tools/nodes.conf` as
 described in
 [vms-grep's README](https://github.com/issinoho/vms-grep#2b-build-on-vms-from-the-host-over-ssh).
@@ -161,7 +166,7 @@ The family of ports, all for IA64 and x86-64, each following its upstream releas
 | bzip2 — [vms-bzip2](https://github.com/issinoho/vms-bzip2) | [v1.0.8-vms1](https://github.com/issinoho/vms-bzip2/releases/tag/v1.0.8-vms1) | the bzip2 compressor and libbz2 |
 | XZ Utils — [vms-xz](https://github.com/issinoho/vms-xz) | [v5.8.4-vms1](https://github.com/issinoho/vms-xz/releases/tag/v5.8.4-vms1) | xz and liblzma |
 | Zstandard — [vms-zstd](https://github.com/issinoho/vms-zstd) | [v1.5.7-vms1](https://github.com/issinoho/vms-zstd/releases/tag/v1.5.7-vms1) | zstd and libzstd |
-| **curl** (this port) — [vms-curl](https://github.com/issinoho/vms-curl) | [v8.22.0-vms1](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms1) | alongside VSI's curl kit, following curl's own releases |
+| **curl** (this port) — [vms-curl](https://github.com/issinoho/vms-curl) | [v8.22.0-vms2](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms2) | alongside VSI's curl kit, following curl's own releases |
 | GNU Wget — [vms-wget](https://github.com/issinoho/vms-wget) | [v1.25.0-vms2](https://github.com/issinoho/vms-wget/releases/tag/v1.25.0-vms2) | the web retriever |
 | GNU m4 — [vms-m4](https://github.com/issinoho/vms-m4) | [v1.4.21-vms1](https://github.com/issinoho/vms-m4/releases/tag/v1.4.21-vms1) | the macro processor |
 | GNU Bison — [vms-bison](https://github.com/issinoho/vms-bison) | [v3.8.2-vms2](https://github.com/issinoho/vms-bison/releases/tag/v3.8.2-vms2) | the parser generator; runs GNU m4 |

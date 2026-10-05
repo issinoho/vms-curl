@@ -14,12 +14,14 @@ What is installed
 -----------------
     VMSCURL$ROOT:[BIN]CURL.EXE      curl, with libcurl linked in
     VMSCURL$ROOT:[SSL]CACERT.PEM    the default CA certificates
+    VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM
+                                    defines the curl command
     VMSCURL$ROOT:[DOC]              this file, COPYING, MANUAL.TXT,
                                     SSLCERTS.TXT, RELEASE-NOTES
     SYS$STARTUP:VMSCURL$STARTUP.COM defines VMSCURL$ROOT
 
 TLS uses VSI's OpenSSL 3.0 kit (SSL3), a prerequisite of this kit; zlib
-(for --compressed) is linked in.  LDAP uses the VMS LDAP library.  There
+and zstd (for --compressed: gzip, deflate and zstd) are linked in.  LDAP uses the VMS LDAP library.  There
 is no HTTP/2, HTTP/3, SSH (scp/sftp) or Kerberos support in this build.
 
 Setting up
@@ -30,13 +32,13 @@ SYS$MANAGER:SYSTARTUP_VMS.COM:
 
     $ @SYS$STARTUP:VMSCURL$STARTUP.COM
 
-Then define a foreign command (in SYLOGIN.COM or LOGIN.COM):
+Each user (or SYLOGIN.COM, for everyone) then defines the command:
 
-    $ curl :== $VMSCURL$ROOT:[BIN]CURL.EXE
+    $ @VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM
 
 VSI's own CURL kit uses CURL$ROOT and [CURL]; this kit uses VMSCURL$ROOT
-and [VMSCURL], so both can be installed.  The foreign command decides
-which one "curl" runs.
+and [VMSCURL], so both can be installed.  VMSCURL$SETUP.COM makes "curl"
+run this kit's CURL.EXE.
 
 CA certificates
 ---------------

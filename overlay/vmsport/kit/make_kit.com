@@ -44,7 +44,7 @@ $ if f$search("[.KIT_''arch']MAT.DIR") .eqs. "" then create/directory 'mat'
 $ if f$search("''out'*.PCSI;*") .nes. "" then delete/nolog 'out'*.PCSI;*
 $ if f$search("''mat'*.*;*") .nes. "" then delete/nolog 'mat'*.*;*
 $ copy/nolog 'exe' 'mat'
-$ copy/nolog [.VMSPORT.KIT]VMSCURL$STARTUP.COM,README.VMS,CACERT.PEM 'mat'
+$ copy/nolog [.VMSPORT.KIT]VMSCURL$STARTUP.COM,VMSCURL$SETUP.COM,README.VMS,CACERT.PEM 'mat'
 $ copy/nolog [.VMSPORT.KIT.DOC]*.* 'mat'
 $ matspec = f$parse(mat,,,"DEVICE","NO_CONCEAL") + f$parse(mat,,,"DIRECTORY","NO_CONCEAL")
 $!

@@ -12,8 +12,9 @@
     At system startup: to define VMSCURL$ROOT at every boot, add this line
     to SYS$MANAGER:SYSTARTUP_VMS.COM:
     $ @SYS$STARTUP:VMSCURL$STARTUP.COM
-    To run curl, define a foreign command, for example in SYLOGIN.COM:
-    $ curl :== $VMSCURL$ROOT:[BIN]CURL.EXE
+    For each user: to define the curl command, add this line to LOGIN.COM
+    (or SYLOGIN.COM, for everyone):
+    $ @VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM
     In batch jobs, quote options that use capital letters ("-F") or use
     SET PROCESS/PARSE_STYLE=EXTENDED first.
 

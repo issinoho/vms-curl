@@ -23,6 +23,11 @@ cat > "$job" <<DCL
 \$ zdev = f\$parse(zdir,,,"DEVICE","NO_CONCEAL")
 \$ zroot = f\$parse(zdir,,,"DIRECTORY","NO_CONCEAL") - "][" - "]" + ".]"
 \$ define/process/translation_attributes=concealed ZLIB\$ROOT 'zdev''zroot'
+\$! ZSTD\$ROOT: the node's vms-zstd install tree (ZSTD_TREE in upstream.conf)
+\$ zdir = "${WORKDIR%]}.$ZSTD_TREE.INSTALL_" + zarch + "]"
+\$ zdev = f\$parse(zdir,,,"DEVICE","NO_CONCEAL")
+\$ zroot = f\$parse(zdir,,,"DIRECTORY","NO_CONCEAL") - "][" - "]" + ".]"
+\$ define/process/translation_attributes=concealed ZSTD\$ROOT 'zdev''zroot'
 \$ purge/nolog ${WORKDIR%]}.$remote...]*.*
 \$ @${WORKDIR%]}.$remote.VMSPORT]BUILD.COM $target $keep
 DCL

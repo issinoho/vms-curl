@@ -10,3 +10,4 @@
 0009-tool-vms-parse-style-hint.patch
 0010-vms-default-ca-bundle.patch
 0011-tool-vms-status-severity.patch
+0012-vms-static-zstd.patch

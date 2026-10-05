@@ -28,12 +28,12 @@ $ out = "[.SMOKE]OUT.TXT"
 $ err = "[.SMOKE]ERR.TXT"
 $ set process/parse_style=extended
 $!
-$! 1. version: OpenSSL 3 and zlib linked in
+$! 1. version: OpenSSL 3, zlib and zstd linked in
 $ define/user sys$output 'out'
 $ curl --version
-$ search/nooutput/match=and 'out' "OpenSSL/3.","zlib/"
+$ search/nooutput/match=and 'out' "OpenSSL/3.","zlib/","zstd/"
 $ sev = $severity
-$ name = "version shows OpenSSL 3 and zlib"
+$ name = "version shows OpenSSL 3, zlib and zstd"
 $ gosub check_success
 $!
 $! 2. HTTP GET
@@ -64,6 +64,33 @@ $ curl -sS -o nla0: --compressed -w "%{content_type} %{size_download}\n" https:/
 $ search/nooutput 'out' "text/html"
 $ sev = $severity
 $ name = "--compressed"
+$ gosub check_success
+$!
+$! 5b. --compressed offers zstd (patch 0012)
+$ define/user sys$error 'err'
+$ curl -v -sS -o nla0: --compressed https://example.com/
+$ search/nooutput 'err' "Accept-Encoding:","zstd"/match=and
+$ sev = $severity
+$ name = "--compressed offers zstd in Accept-Encoding"
+$ gosub check_success
+$!
+$! 5c. a Content-Encoding: zstd response is decoded (a site that serves zstd)
+$! The headers must say zstd, and the saved body must be HTML: the zstd data
+$! itself, undecoded, would not start with <!DOCTYPE.
+$ curl -sS --compressed -D [.SMOKE]ZSTD.HDR -o [.SMOKE]ZSTD.HTML https://www.facebook.com/
+$ sev = $severity
+$ if sev .eq. 1
+$ then
+$   search/nooutput [.SMOKE]ZSTD.HDR "content-encoding: zstd"
+$   sev = $severity
+$ endif
+$ if sev .eq. 1
+$ then
+$   define/user sys$output nla0:
+$   search/nooutput/limit=1 [.SMOKE]ZSTD.HTML "<!DOCTYPE"
+$   sev = $severity
+$ endif
+$ name = "a zstd-encoded response is decoded"
 $ gosub check_success
 $!
 $! 6. body output is written in whole records (patch 0008)

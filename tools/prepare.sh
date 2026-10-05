@@ -68,6 +68,7 @@ for base in I64VMS X86VMS; do
 done
 rm -f "$kit/$lc.pcsi\$desc_template" "$kit/$lc.pcsi\$text_template"
 mv "$kit/$lc\$startup.com" "$kit/$KIT_PRODUCT\$STARTUP.COM"
+mv "$kit/$lc\$setup.com" "$kit/$KIT_PRODUCT\$SETUP.COM"
 subst "" "IA64 and x86-64" < "$kit/readme.vms" > "$kit/README.VMS"; rm -f "$kit/readme.vms"
 cp "$cabundle" "$kit/CACERT.PEM"
 mkdir -p "$kit/doc"

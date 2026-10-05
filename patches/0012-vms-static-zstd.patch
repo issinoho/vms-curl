@@ -1,0 +1,77 @@
+Subject: projects/vms: link a static libzstd from ZSTD$ROOT (Content-Encoding: zstd)
+
+curl decodes Content-Encoding: zstd when built with libzstd (HAVE_ZSTD).
+When the rooted logical ZSTD$ROOT names a libzstd install tree
+([INCLUDE]ZSTD.H, [LIB]LIBZSTD.OLB), as built by
+github.com/issinoho/vms-zstd, add its include directory, link the object
+library into libcurl and curl, and define HAVE_ZSTD; as patch 0001 does for
+zlib.  zstd.h declares its API under #pragma names, so the library links
+whatever /NAMES curl is compiled with.
+
+--- a/projects/vms/build_vms.com	2026-10-05 13:49:22.182503906 +0100
++++ b/projects/vms/build_vms.com	2026-10-05 13:49:22.265870262 +0100
+@@ -707,6 +707,21 @@
+ $ endif
+ $libz_done:
+ $!
++$! ZSTD: a static libzstd in the rooted logical ZSTD$ROOT ([INCLUDE]ZSTD.H,
++$! [LIB]LIBZSTD.OLB), as built by github.com/issinoho/vms-zstd, for
++$! Content-Encoding: zstd; generate_config_vms_h_curl.com defines HAVE_ZSTD.
++$ libzstd_line = ""
++$ curl_sys_zstdinc = ""
++$ if f$trnlnm("ZSTD$ROOT") .nes. ""
++$ then
++$   if f$search("ZSTD$ROOT:[LIB]LIBZSTD.OLB") .nes. ""
++$   then
++$       'vo_c' "%CURL-I-BLDZSTDOLB, building with static ZSTD (ZSTD$ROOT)"
++$       libzstd_line = "ZSTD$ROOT:[LIB]LIBZSTD.OLB/LIBRARY"
++$       curl_sys_zstdinc = "ZSTD$ROOT:[INCLUDE]"
++$   endif
++$ endif
++$!
+ $! Form CC qualifiers.
+ $!
+ $ cc_defs = "/define = (''cc_defs')"
+@@ -856,6 +871,10 @@
+ $ then
+ $   sys_inc = sys_inc + ",''curl_sys_zlibinc'"
+ $ endif
++$ if curl_sys_zstdinc .nes. ""
++$ then
++$   sys_inc = sys_inc + ",''curl_sys_zstdinc'"
++$ endif
+ $! Build LIB
+ $ cc_include = "/include=([-.lib],[-.lib.vtls],[-.projects.vms]"
+ $ cc_include = cc_include + ",[-.projects.vms.''arch_name'])"
+@@ -930,6 +949,7 @@
+ $ create 'exedir'gnv$curl.opt
+ $ open/append opt 'exedir'gnv$curl.opt
+ $ if libzshr_line .nes. "" then write opt libzshr_line
++$ if libzstd_line .nes. "" then write opt libzstd_line
+ $ if gssrtlshr_line .nes. "" then write opt gssrtlshr_line
+ $ if libcryptoshr_line .nes. "" then write opt libcryptoshr_line
+ $ if libsslshr_line .nes. "" then write opt libsslshr_line
+@@ -941,6 +961,7 @@
+ $ create 'exedir'gnv_libcurl_linker.opt
+ $ open/append opt 'exedir'gnv_libcurl_linker.opt
+ $ if libzshr_line .nes. "" then write opt libzshr_line
++$ if libzstd_line .nes. "" then write opt libzstd_line
+ $ if gssrtlshr_line .nes. "" then write opt gssrtlshr_line
+ $ if libcryptoshr_line .nes. "" then write opt libcryptoshr_line
+ $ if libsslshr_line .nes. "" then write opt libsslshr_line
+--- a/projects/vms/generate_config_vms_h_curl.com	2026-10-05 13:49:22.182991735 +0100
++++ b/projects/vms/generate_config_vms_h_curl.com	2026-10-05 13:49:22.266518151 +0100
+@@ -480,6 +480,13 @@
+ $   write cvh "#define HAVE_LIBZ 1"
+ $endif
+ $!
++$! A static libzstd in ZSTD$ROOT (github.com/issinoho/vms-zstd): build_vms.com
++$! links it when ZSTD$ROOT:[LIB]LIBZSTD.OLB exists.
++$if f$search("ZSTD$ROOT:[LIB]LIBZSTD.OLB") .nes. ""
++$then
++$   write cvh "#define HAVE_ZSTD 1"
++$endif
++$!
+ $!
+ $! Suppress a message in curl_gssapi.c compile.
+ $write cvh "#pragma message disable notconstqual"

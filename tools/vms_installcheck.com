@@ -24,7 +24,9 @@ $ write sys$output "startup procedure: [", f$search("SYS$STARTUP:VMSCURL$STARTUP
 $ show logical VMSCURL$ROOT
 $ directory/nohead/notrail VMSCURL$ROOT:[000000...]*.*
 $ write sys$output "=== CURL FROM THE INSTALLED KIT"
-$ curl = "$VMSCURL$ROOT:[BIN]CURL.EXE"
+$ write sys$output "setup procedure: [", f$search("VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM"), "]"
+$ @VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM
+$ show symbol curl
 $ curl "--version"
 $ sev = $severity
 $ if sev .eq. 1 then write sys$output "CURL_VERSION: PASS"
@@ -54,3 +56,4 @@ $ write sys$output "files after removal: [", f$search("SYS$COMMON:[VMSCURL...]*.
 $ write sys$output "startup after removal: [", f$search("SYS$STARTUP:VMSCURL$STARTUP.COM"), "]"
 $ if vsi_ok .and. f$search(vsi_exe) .eqs. "" then write sys$output "CURL_VSI_CURL_AFTER: FAIL (after removal)"
 $ product show product VMSCURL /producer=ISSINOHO
+$ delete/symbol/global curl

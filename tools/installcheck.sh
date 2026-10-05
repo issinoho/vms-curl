@@ -16,10 +16,11 @@ log=$top/out/install-$node.txt
 job=$top/cache/installcheck-$node.com
 printf '$ set noon\n$ @%sVMS_INSTALLCHECK.COM %s\n' "$WORKDIR" "$REMOTE" > "$job"
 VMS_TIMEOUT=1800 "$top/tools/vms.sh" "$node" run "$job" > "$log" 2>&1
-grep -aE 'install status|Installed|startup procedure|VMSCURL\$ROOT =|CURL_[A-Z_]*: |SUCREMOVE|after removal|items found' "$log"
+grep -aE 'install status|Installed|startup procedure|setup procedure|VMSCURL\$ROOT =|CURL_[A-Z_]*: |SUCREMOVE|after removal|items found' "$log"
 for check in VERSION HTTPS_DEFAULT_CA VSI_CURL_BEFORE VSI_CURL_AFTER; do
     grep -aq "CURL_$check: PASS" "$log" || { echo "installcheck: CURL_$check did not pass" >&2; exit 1; }
 done
+grep -aq 'setup procedure: \[..*\]' "$log" || { echo 'installcheck: VMSCURL$SETUP.COM not installed' >&2; exit 1; }
 grep -aq 'VMSCURL\$ROOT after removal: \[\]' "$log" &&
     grep -aq 'files after removal: \[\]' "$log" &&
     grep -aq 'startup after removal: \[\]' "$log"
