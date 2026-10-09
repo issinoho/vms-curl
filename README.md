@@ -4,7 +4,9 @@
 
 # curl for OpenVMS
 
+[![Release](https://img.shields.io/github/v/release/issinoho/vms-curl?label=release)](https://github.com/issinoho/vms-curl/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/issinoho/vms-curl/total?label=downloads)](https://github.com/issinoho/vms-curl/releases)
+![OpenVMS](https://img.shields.io/badge/OpenVMS-IA64%20%7C%20x86--64-blue)
 
 [curl](https://curl.se) (**8.22.0**) built natively for OpenVMS on **IA64** and **x86-64**,
 following curl's own releases rather than any vendor's release cycle. VSI ships a CURL kit, but it
