@@ -4,6 +4,8 @@
 
 # curl for OpenVMS
 
+[![Downloads](https://img.shields.io/github/downloads/issinoho/vms-curl/total?label=downloads)](https://github.com/issinoho/vms-curl/releases)
+
 [curl](https://curl.se) (**8.22.0**) built natively for OpenVMS on **IA64** and **x86-64**,
 following curl's own releases rather than any vendor's release cycle. VSI ships a CURL kit, but it
 follows VSI's slower release cycle; this port tracks upstream curl in lock-step. It belongs to the
