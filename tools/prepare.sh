@@ -62,7 +62,7 @@ subst() {
 }
 lc=$(echo "$KIT_PRODUCT" | tr A-Z a-z)
 # Named PRODUCT-<base>: upstream's build_vms.com CLEAN deletes [...]*curl*.pcsi$desc.
-for base in I64VMS X86VMS; do
+for base in I64VMS X86VMS AXPVMS; do
     subst $base "" < "$kit/$lc.pcsi\$desc_template" > "$kit/PRODUCT-$base.PCSI\$DESC"
     subst $base "" < "$kit/$lc.pcsi\$text_template" > "$kit/PRODUCT-$base.PCSI\$TEXT"
 done
