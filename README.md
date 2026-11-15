@@ -6,10 +6,10 @@
 
 [![Release](https://img.shields.io/github/v/release/issinoho/vms-curl?label=release)](https://github.com/issinoho/vms-curl/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/issinoho/vms-curl/total?label=downloads)](https://github.com/issinoho/vms-curl/releases)
-![OpenVMS](https://img.shields.io/badge/OpenVMS-IA64%20%7C%20x86--64-blue)
+![OpenVMS](https://img.shields.io/badge/OpenVMS-IA64%20%7C%20x86--64%20%7C%20Alpha-blue)
 [![License](https://img.shields.io/badge/license-curl-blue)](COPYING)
 
-[curl](https://curl.se) (**8.22.0**) built natively for OpenVMS on **IA64** and **x86-64**,
+[curl](https://curl.se) (**8.22.0**) built natively for OpenVMS on **IA64**, **x86-64** and **Alpha**,
 following curl's own releases rather than any vendor's release cycle. VSI ships a CURL kit, but it
 follows VSI's slower release cycle; this port tracks upstream curl in lock-step. It belongs to the
 same family as [GNU grep](https://github.com/issinoho/vms-grep),
@@ -43,6 +43,13 @@ VMS files in `vmsport/`.
 | Smoke test (HTTP, HTTPS with the default CA bundle, `--compressed` with gzip and zstd, batch output, errors) | 10/10 | 10/10 |
 | Form post from a batch job | yes | yes |
 | PCSI kit ([v8.22.0-vms2](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms2)) | `ISSINOHO-I64VMS-VMSCURL-V0822-0E2-1.PCSI` | `ISSINOHO-X86VMS-VMSCURL-V0822-0E2-1.PCSI` |
+
+**Alpha (v8.22.0-vms3, a dedicated Alpha release; IA64 and x86-64 stay on vms2):** built on
+OpenVMS Alpha V8.4-2L2 with VSI C V7.4-002 and `/FLOAT=IEEE_FLOAT` (upstream's `build_vms.com`
+already detects Alpha and selects it; VSI C on Alpha defaults to G_FLOAT); DCL smoke test
+10/10; kit `ISSINOHO-AXPVMS-VMSCURL-V0822-0E3-1.PCSI` (PCSI version `V8.22-0E3`). The Alpha
+node has no Perl, Python or C++, and batch jobs only, so the tools run it through
+`tools/vms.sh batch`.
 
 `curl --version` on x86-64:
 
@@ -157,7 +164,7 @@ described in
 
 1. HTTP/2 (nghttp2) and SSH (libssh2) support.
 2. Patches 0002-0007 and 0011 offered to curl (0011, the exit-severity fix, also affects VSI's curl).
-3. A port to OpenVMS **Alpha**.
+3. ~~A port to OpenVMS **Alpha**.~~ Done: see Status (Alpha kit, patch level 3).
 
 The family of ports, all for IA64 and x86-64 (MariaDB: x86-64 only), each following its upstream releases:
 

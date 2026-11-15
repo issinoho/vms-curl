@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-curl for OpenVMS (IA64, x86-64), built with curl's own `projects/vms/build_vms.com`, wrapped
+curl for OpenVMS (IA64, x86-64, Alpha), built with curl's own `projects/vms/build_vms.com`, wrapped
 by the same tooling as `~/projects/vms-grep`, `vms-pcre2`, `vms-sed`, `vms-awk` and
 `vms-zlib` (read vms-grep's `CLAUDE.md` for the ground rules and VMS/ssh pitfalls; they all
 apply). In short:
@@ -40,11 +40,29 @@ apply). In short:
 
 ```sh
 tools/prepare.sh
-tools/build.sh <ia64|x86> [ALL|CLEAN]
+tools/build.sh <ia64|x86|alpha> [ALL|CLEAN]
 tools/test.sh <node>            # smoke test (needs network access to example.com)
 tools/kit.sh <node>             # PCSI kit -> out/kits/
 tools/installcheck.sh <node>    # install, verify, remove (changes the system; ask first)
 ```
+
+## Alpha
+
+- `build.sh`/`test.sh`/`kit.sh`/`installcheck.sh` use `vms.sh batch` there (interactive ssh
+  output is unreliable; a batch job starts in the login directory, so each job sets default
+  to the work directory). `vms.sh` is vms-grep's (it retries a command that never started).
+- DCL: upstream's `build_vms.com` already upper-cases `F$GETSYI("ARCH_NAME")` and compares
+  with `.EQS.` (patch 0002 keeps that); our `build.com` and `make_kit.com` do the same, and
+  `make_kit.com` maps ALPHA to the AXPVMS base. Never compare architecture names with `.EQ.`.
+- VSI C on Alpha defaults to G_FLOAT; upstream's `cc_float` is `/float=ieee/ieee_mode=denorm_results`
+  for every non-VAX architecture, so it is already right.
+- The AXPVMS kit has its own README (`README_AXPVMS.VMS`). Patch level 3 is the Alpha kit
+  (PCSI `V8.22-0E3`); the x86-64 and IA64 kits stay on 2.
+- Needs, in the node's work directory, the vms-zlib and vms-zstd Alpha trees
+  (`ZLIB-1_3_2.INSTALL_ALPHA`, `ZSTD-1_5_7.INSTALL_ALPHA`) and VSI's SSL3 kit.
+- No Perl, Python or C++ on the Alpha; the smoke test is DCL only. curl's VMS code uses no
+  item lists (`$GETRMI` etc.); its only system service calls are `sys$assign`/`sys$qiow`
+  for password input.
 
 Don't push without the user asking; the remote is `origin` (github.com/issinoho/vms-curl),
 branch `main`.

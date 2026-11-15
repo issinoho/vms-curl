@@ -69,7 +69,9 @@ done
 rm -f "$kit/$lc.pcsi\$desc_template" "$kit/$lc.pcsi\$text_template"
 mv "$kit/$lc\$startup.com" "$kit/$KIT_PRODUCT\$STARTUP.COM"
 mv "$kit/$lc\$setup.com" "$kit/$KIT_PRODUCT\$SETUP.COM"
-subst "" "IA64 and x86-64" < "$kit/readme.vms" > "$kit/README.VMS"; rm -f "$kit/readme.vms"
+subst "" "IA64 and x86-64" < "$kit/readme.vms" > "$kit/README.VMS"
+# The Alpha kit has its own README (the others are unchanged, so their kits stay as released).
+subst "" "Alpha" < "$kit/readme.vms" > "$kit/README_AXPVMS.VMS"; rm -f "$kit/readme.vms"
 cp "$cabundle" "$kit/CACERT.PEM"
 mkdir -p "$kit/doc"
 cp "$stage/COPYING" "$kit/doc/COPYING."

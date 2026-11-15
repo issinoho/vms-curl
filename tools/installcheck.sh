@@ -10,12 +10,14 @@ node=${1:?usage: installcheck.sh <node>}
 . "$top/upstream.conf"
 REMOTE=$(echo "$UPSTREAM_NAME-$UPSTREAM_VERSION" | tr . _ | tr a-z A-Z)
 "$top/tools/vms.sh" "$node" put "$top/tools/vms_installcheck.com" >/dev/null
-read -r _ _ _ _ _ WORKDIR _ < <(awk -v n="$node" '$1==n' "$top/tools/nodes.conf")
+read -r _ ARCH _ _ _ WORKDIR _ < <(awk -v n="$node" '$1==n' "$top/tools/nodes.conf")
+mode=run; [ "$ARCH" = ALPHA ] && mode=batch   # interactive ssh output is unreliable on the Alpha (and slow)
 mkdir -p "$top/out"
 log=$top/out/install-$node.txt
 job=$top/cache/installcheck-$node.com
-printf '$ set noon\n$ @%sVMS_INSTALLCHECK.COM %s\n' "$WORKDIR" "$REMOTE" > "$job"
-VMS_TIMEOUT=1800 "$top/tools/vms.sh" "$node" run "$job" > "$log" 2>&1
+# set default: a batch job starts in the login directory, not the work directory.
+printf '$ set noon\n$ set default %s\n$ @%sVMS_INSTALLCHECK.COM %s\n' "$WORKDIR" "$WORKDIR" "$REMOTE" > "$job"
+VMS_TIMEOUT=1800 "$top/tools/vms.sh" "$node" $mode "$job" > "$log" 2>&1
 grep -aE 'install status|Installed|startup procedure|setup procedure|VMSCURL\$ROOT =|CURL_[A-Z_]*: |SUCREMOVE|after removal|items found' "$log"
 for check in VERSION HTTPS_DEFAULT_CA VSI_CURL_BEFORE VSI_CURL_AFTER; do
     grep -aq "CURL_$check: PASS" "$log" || { echo "installcheck: CURL_$check did not pass" >&2; exit 1; }
