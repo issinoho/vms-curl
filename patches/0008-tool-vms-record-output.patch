@@ -7,8 +7,8 @@ fwrite(buffer, 1, len) appeared one character per line.  Route the body,
 __VMS writes with putc so stdio assembles records at newlines.  Other
 platforms still call fwrite().
 
---- a/src/tool_cb_wrt.h	2026-10-03 23:31:33.544618609 +0100
-+++ b/src/tool_cb_wrt.h	2026-10-03 23:31:33.629912890 +0100
+--- a/src/tool_cb_wrt.h	2026-10-14 06:54:05.000000000 +0100
++++ b/src/tool_cb_wrt.h	2026-11-26 16:47:44.932879243 +0000
 @@ -34,4 +34,13 @@
  bool tool_create_output_file(struct OutStruct *outs,
                               struct OperationConfig *config);
@@ -23,11 +23,11 @@ platforms still call fwrite().
 +#endif
 +
  #endif /* HEADER_CURL_TOOL_CB_WRT_H */
---- a/src/tool_cb_wrt.c	2026-10-03 23:31:33.556582928 +0100
-+++ b/src/tool_cb_wrt.c	2026-10-03 23:31:33.630538879 +0100
-@@ -34,6 +34,26 @@
- #define OPENMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
- #endif
+--- a/src/tool_cb_wrt.c	2026-10-14 06:54:05.000000000 +0100
++++ b/src/tool_cb_wrt.c	2026-11-26 16:47:51.400394758 +0000
+@@ -70,6 +70,26 @@
+   return TRUE;
+ }
  
 +#ifdef __VMS
 +/* When the stream is record-oriented (a terminal, a batch log, a mailbox),
@@ -52,17 +52,17 @@ platforms still call fwrite().
  /* create/open a local file for writing, return TRUE on success */
  bool tool_create_output_file(struct OutStruct *outs,
                               struct OperationConfig *config)
-@@ -337,7 +357,7 @@
-       if(tool_write_headers(&per->hdrcbdata, outs->stream))
-         return CURL_WRITEFUNC_ERROR;
-     }
+@@ -374,7 +394,7 @@
+     if(per->hdrcbdata.headlist &&
+        tool_write_headers(&per->hdrcbdata, outs->stream))
+       return CURL_WRITEFUNC_ERROR;
 -    rc = fwrite(buffer, sz, nmemb, outs->stream);
 +    rc = tool_fwrite(buffer, sz, nmemb, outs->stream);
    }
  
    if(bytes == rc)
---- a/src/tool_cb_hdr.c	2026-10-03 23:31:33.567607162 +0100
-+++ b/src/tool_cb_hdr.c	2026-10-03 23:31:33.631086575 +0100
+--- a/src/tool_cb_hdr.c	2026-10-14 06:54:05.000000000 +0100
++++ b/src/tool_cb_hdr.c	2026-11-26 16:47:44.933142419 +0000
 @@ -237,7 +237,7 @@
    while(h) {
      /* not "handled", show it */
@@ -72,7 +72,7 @@ platforms still call fwrite().
        goto fail;
      h = h->next;
    }
-@@ -449,7 +449,7 @@
+@@ -465,7 +465,7 @@
     */
  
    if(per->config->headerfile && heads->stream) {
