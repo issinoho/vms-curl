@@ -9,7 +9,7 @@
 ![OpenVMS](https://img.shields.io/badge/OpenVMS-IA64%20%7C%20x86--64%20%7C%20Alpha-blue)
 [![License](https://img.shields.io/badge/license-curl-blue)](COPYING)
 
-[curl](https://curl.se) (**8.22.0**) built natively for OpenVMS on **IA64**, **x86-64** and **Alpha**,
+[curl](https://curl.se) (**8.23.0**) built natively for OpenVMS on **IA64**, **x86-64** and **Alpha**,
 following curl's own releases rather than any vendor's release cycle. VSI ships a CURL kit, but it
 follows VSI's slower release cycle; this port tracks upstream curl in lock-step. It belongs to the
 same family as [GNU grep](https://github.com/issinoho/vms-grep),
@@ -37,24 +37,29 @@ VMS files in `vmsport/`.
 
 ## Status
 
-| | IA64 (OpenVMS V8.4-2L3, VSI C 7.4) | x86-64 (OpenVMS E9.2-4, VSI C 7.7) |
-|---|---|---|
-| Builds with upstream's `build_vms.com` | yes | yes |
-| Smoke test (HTTP, HTTPS with the default CA bundle, `--compressed` with gzip and zstd, batch output, errors) | 10/10 | 10/10 |
-| Form post from a batch job | yes | yes |
-| PCSI kit ([v8.22.0-vms2](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms2)) | `ISSINOHO-I64VMS-VMSCURL-V0822-0E2-1.PCSI` | `ISSINOHO-X86VMS-VMSCURL-V0822-0E2-1.PCSI` |
+**Released: [v8.23.0-vms1](https://github.com/issinoho/vms-curl/releases/tag/v8.23.0-vms1)** for
+x86-64 and Alpha, linked with zlib 1.4 and zstd 1.6.0 and shipping Mozilla's root store as of
+5 November 2026. IA64 stays on [v8.22.0-vms2](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms2)
+for now (its build node is unavailable); an 8.23.0 IA64 kit will follow.
 
-**Alpha (v8.22.0-vms3, a dedicated Alpha release; IA64 and x86-64 stay on vms2):** built on
-OpenVMS Alpha V8.4-2L2 with VSI C V7.4-002 and `/FLOAT=IEEE_FLOAT` (upstream's `build_vms.com`
-already detects Alpha and selects it; VSI C on Alpha defaults to G_FLOAT); DCL smoke test
-10/10; kit `ISSINOHO-AXPVMS-VMSCURL-V0822-0E3-1.PCSI` (PCSI version `V8.22-0E3`). The Alpha
-node has no Perl, Python or C++, and batch jobs only, so the tools run it through
-`tools/vms.sh batch`.
+| | IA64 (OpenVMS V8.4-2L3, VSI C 7.4) | x86-64 (OpenVMS E9.2-4, VSI C 7.7) | Alpha (OpenVMS V8.4-2L2, VSI C 7.4) |
+|---|---|---|---|
+| curl version of the newest kit | 8.22.0 (8.23.0 to follow) | **8.23.0** | **8.23.0** |
+| Builds with upstream's `build_vms.com` | yes (8.22.0) | yes | yes |
+| Smoke test (HTTP, HTTPS with the default CA bundle, `--compressed` with gzip and zstd, batch output, errors) | 10/10 (8.22.0) | 10/10 | 10/10 |
+| Kit install (version, HTTPS with the kit's CA bundle, side by side with VSI's CURL kit), remove | clean (8.22.0) | clean | clean |
+| Form post from a batch job | yes (8.22.0) | yes (8.22.0; not rerun) | n/a |
+| PCSI kit | [v8.22.0-vms2](https://github.com/issinoho/vms-curl/releases/tag/v8.22.0-vms2): `ISSINOHO-I64VMS-VMSCURL-V0822-0E2-1.PCSI` | [v8.23.0-vms1](https://github.com/issinoho/vms-curl/releases/tag/v8.23.0-vms1): `ISSINOHO-X86VMS-VMSCURL-V0823-0E1-1.PCSI` | [v8.23.0-vms1](https://github.com/issinoho/vms-curl/releases/tag/v8.23.0-vms1): `ISSINOHO-AXPVMS-VMSCURL-V0823-0E1-1.PCSI` |
+
+On Alpha, VSI C V7.4-002 builds with `/FLOAT=IEEE_FLOAT` (upstream's `build_vms.com` already
+detects Alpha and selects it; VSI C on Alpha defaults to G_FLOAT). The Alpha node has no Perl,
+Python or C++, and runs batch jobs only, so the tools run it through `tools/vms.sh batch` and
+the smoke test is DCL only.
 
 `curl --version` on x86-64:
 
 ```
-curl 8.22.0 (X86_64-HP-VMS) libcurl/8.22.0 OpenSSL/3.0.21 zlib/1.3.2 zstd/1.5.7 LDAP/1
+curl 8.23.0 (X86_64-HP-VMS) libcurl/8.23.0 OpenSSL/3.0.22 zlib/1.4 zstd/1.6.0 LDAP/1
 Protocols: dict file ftp ftps gopher gophers http https imap imaps ipfs ipns ldap ldaps mqtt mqtts pop3 pop3s rtsp smtp smtps telnet tftp ws wss
 Features: alt-svc HSTS HTTPS-proxy HTTPSIG IPv6 Largefile libz SSL zstd
 ```
@@ -69,7 +74,7 @@ against the release's `SHA256SUMS`. A kit downloaded through a non-VMS system lo
 record format, so restore that first, then install it:
 
 ```
-$ SET FILE/ATTRIBUTE=(RFM:FIX,LRL:8192,MRS:8192,RAT:NONE) ISSINOHO-*-VMSCURL-V0822-0E2-1.PCSI
+$ SET FILE/ATTRIBUTE=(RFM:FIX,LRL:8192,MRS:8192,RAT:NONE) ISSINOHO-*-VMSCURL-V0823-0E1-1.PCSI
 $ PRODUCT INSTALL VMSCURL /PRODUCER=ISSINOHO /SOURCE=dev:[dir]
 $ @VMSCURL$ROOT:[000000]VMSCURL$SETUP.COM
 ```
@@ -79,7 +84,7 @@ It installs `CURL.EXE` under `[VMSCURL.BIN]`, the CA bundle as `[VMSCURL.SSL]CAC
 in `[VMSCURL.DOC]`, and `SYS$STARTUP:VMSCURL$STARTUP.COM`, which defines
 `VMSCURL$ROOT` (add `$ @SYS$STARTUP:VMSCURL$STARTUP.COM` to `SYS$MANAGER:SYSTARTUP_VMS.COM`
 to define it at every boot). `PRODUCT REMOVE VMSCURL` removes it and deassigns
-`VMSCURL$ROOT`. The kit's version `V8.22-0E2` is curl 8.22.0 with our patch level as the
+`VMSCURL$ROOT`. The kit's version `V8.23-0E1` is curl 8.23.0 with our patch level as the
 ECO.
 
 **Alongside VSI's CURL kit:** VSI's kit uses `[CURL]`, `CURL$ROOT` and `CURL$STARTUP.COM`;
@@ -153,7 +158,7 @@ tools/test.sh ia64          # smoke test (needs network access to example.com)
 tools/kit.sh ia64           # PCSI kit -> out/kits/
 ```
 
-By hand on VMS: copy the top-level files of `staging/curl-8.22.0/` and its `include`, `lib`,
+By hand on VMS: copy the top-level files of `staging/curl-8.23.0/` and its `include`, `lib`,
 `src`, `projects` and `vmsport` directories, define `ZLIB$ROOT` and `ZSTD$ROOT` for the
 zlib and zstd install trees,
 then `@[.VMSPORT]BUILD` and `@[.VMSPORT]TEST_SMOKE`. Set up `tools/nodes.conf` as

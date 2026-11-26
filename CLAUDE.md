@@ -13,7 +13,7 @@ apply). In short:
   git-ignored `cache/*.com`.
 - **Dependencies on each node:** VSI's SSL3 kit (OpenSSL 3.0, `SSL3$INCLUDE`, shared images
   `SSL3$LIBSSL_SHR32`/`SSL3$LIBCRYPTO_SHR32`), and a vms-zlib install tree at
-  `<workdir>.ZLIB-1_3_2.INSTALL_<arch>]`, which build.sh defines as `ZLIB$ROOT`.
+  `<workdir>.<ZLIB_TREE>.INSTALL_<arch>]` (see `upstream.conf`), which build.sh defines as `ZLIB$ROOT`.
 - **`build_vms.com` generates `config_vms.h`/`curl_config.h` only when the object
   directory has no `curl_config.h`.** After changing a config patch or the default CA
   bundle, run `tools/build.sh <node> CLEAN` first.
@@ -35,7 +35,7 @@ apply). In short:
 - **Compiler quirks:** x86 VSI C 7.7 ACCVIOs on `lib/formdata.c` with `/DEBUG`
   (`/DEBUG=TRACEBACK` is used); x86 ignores `/NESTED_INCLUDE=PRIMARY_FILE`, and `./` on the
   include list makes `lib/curlx/wait.h` hide `<wait.h>` (patch 0005).
-- **Versions:** three-part, so curl 8.22.0 with patch level 1 is PCSI `V8.22-0E1`. Bump
+- **Versions:** three-part, so curl 8.23.0 with patch level 1 is PCSI `V8.23-0E1`. Bump
   `VMS_PATCH_LEVEL` for any change to a published kit.
 
 ```sh
@@ -56,10 +56,10 @@ tools/installcheck.sh <node>    # install, verify, remove (changes the system; a
   `make_kit.com` maps ALPHA to the AXPVMS base. Never compare architecture names with `.EQ.`.
 - VSI C on Alpha defaults to G_FLOAT; upstream's `cc_float` is `/float=ieee/ieee_mode=denorm_results`
   for every non-VAX architecture, so it is already right.
-- The AXPVMS kit has its own README (`README_AXPVMS.VMS`). Patch level 3 is the Alpha kit
-  (PCSI `V8.22-0E3`); the x86-64 and IA64 kits stay on 2.
+- The AXPVMS kit has its own README (`README_AXPVMS.VMS`). Since 8.23.0 all architectures
+  share one patch level.
 - Needs, in the node's work directory, the vms-zlib and vms-zstd Alpha trees
-  (`ZLIB-1_3_2.INSTALL_ALPHA`, `ZSTD-1_5_7.INSTALL_ALPHA`) and VSI's SSL3 kit.
+  (`<ZLIB_TREE>.INSTALL_ALPHA`, `<ZSTD_TREE>.INSTALL_ALPHA`, as named in `upstream.conf`) and VSI's SSL3 kit.
 - No Perl, Python or C++ on the Alpha; the smoke test is DCL only. curl's VMS code uses no
   item lists (`$GETRMI` etc.); its only system service calls are `sys$assign`/`sys$qiow`
   for password input.
